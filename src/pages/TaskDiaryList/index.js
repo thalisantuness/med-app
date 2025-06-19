@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { Calendar } from "react-native-calendars";
 import { Feather } from '@expo/vector-icons';
@@ -11,7 +11,8 @@ const TaskDiaryList = ({ navigation }) => {
     
     navigation.navigate('HoursList', { 
       month: formattedMonth, 
-      day: dayOfMonth 
+      day: parseInt(dayOfMonth), // Convertemos para número
+      dateString: day.dateString // Passamos a data completa
     });
   };
 
@@ -19,10 +20,7 @@ const TaskDiaryList = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar backgroundColor="white" barStyle="dark-content" />
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={16} color="black" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
@@ -44,8 +42,6 @@ const TaskDiaryList = ({ navigation }) => {
             textDayStyle: { color: "#000000" },
           }}
           onDayPress={handleDayPress}
-          markedDates={{
-          }}
         />
       </View>
     </View>

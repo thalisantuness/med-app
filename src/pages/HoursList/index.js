@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, {useState} from "react";
 import { View, Text, TouchableOpacity, FlatList } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import styles from "./styles";
 
 const HoursList = ({ route, navigation }) => {
-  const { month, day } = route.params;
+  const { month, day, dateString } = route.params;
+  const [year, monthNum] = month.split('-');
 
   // Horários das 7h às 20h
   const [hours] = useState(Array.from({ length: 14 }, (_, i) => i + 7));
@@ -23,17 +24,14 @@ const HoursList = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={16} color="black" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
       </View>
 
       <Text style={styles.pageTitle}>
-        Horas do dia {day}/{month.split("-")[1]}
+        Horas do dia {day}/{monthNum}
       </Text>
 
       <View style={styles.content}>
@@ -44,14 +42,15 @@ const HoursList = ({ route, navigation }) => {
             <TouchableOpacity
               style={[
                 styles.item,
-                fixedTasks[item] && styles.fixedTaskItem, // Estilo diferente para tarefas fixas
+                fixedTasks[item] && styles.fixedTaskItem,
               ]}
               onPress={() =>
                 navigation.navigate("TaskForm", {
                   month,
-                  day,
+                  day: parseInt(day), // Garante que é número
                   hour: item,
-                  fixedTask: fixedTasks[item], // Passa a tarefa fixa como parâmetro
+                  fixedTask: fixedTasks[item],
+                  dateString, // Passa a data completa
                 })
               }
             >
@@ -59,12 +58,7 @@ const HoursList = ({ route, navigation }) => {
                 {item}:00 {fixedTasks[item] && `- ${fixedTasks[item]}`}
               </Text>
               {fixedTasks[item] && (
-                <Feather
-                  name="lock"
-                  size={16}
-                  color="#385b3e"
-                  style={styles.lockIcon}
-                />
+                <Feather name="lock" size={16} color="#385b3e" />
               )}
             </TouchableOpacity>
           )}

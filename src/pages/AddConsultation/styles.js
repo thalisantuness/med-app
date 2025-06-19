@@ -10,6 +10,9 @@ export default StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 40,
   },
+  disabledButton: {
+    backgroundColor: "#cccccc",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",

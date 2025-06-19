@@ -19,7 +19,7 @@ const PatientsList = ({ navigation }) => {
 
   const fetchPatients = async () => {
     try {
-      const response = await api.get("pacientes");
+      const response = await api.get("usuarios/pacientes");
       setPatients(response.data);
     } catch (error) {
       console.error("Error fetching patients:", error);

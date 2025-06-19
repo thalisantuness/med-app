@@ -6,44 +6,112 @@ import {
   TextInput,
   ActivityIndicator,
   ScrollView,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import api from "../../services/api";
 import styles from "./styles";
+import { useContextProvider } from "../../context/AuthContext";
 
 const AddConsultation = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
+  const [loadingPatients, setLoadingPatients] = useState(false);
   const [formData, setFormData] = useState({
     descricao: "",
     data_agendada: "",
     status: "agendada",
-    medico_id: 1,
-    familia_id: 1,
+    medico_id: null,
+    familia_id: null,
   });
-  const [doctors, setDoctors] = useState([]);
-  const [families, setFamilies] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
 
-  const fetchDoctorsAndFamilies = async () => {
+  // Ajusta o horário inicial para o próximo intervalo de 30 minutos
+  useEffect(() => {
+    const now = new Date();
+    const minutes = now.getMinutes();
+    const adjustedMinutes = minutes < 30 ? 30 : 60;
+    now.setMinutes(adjustedMinutes);
+    now.setSeconds(0);
+    if (adjustedMinutes === 60) now.setHours(now.getHours() + 1);
+    setDate(now);
+  }, []);
+
+  const { userIdLogin, token } = useContextProvider();
+
+  const fetchPatients = async () => {
     try {
-      setDoctors([{ usuario_id: 1, nome: "Dr. Renato Oliveira" }]);
-      setFamilies([{ usuario_id: 1, nome: "Família Silva" }]);
+      setLoadingPatients(true);
+      const response = await api.get("/usuarios/pacientes");
+      setPatients(response.data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching patients:", error);
+    } finally {
+      setLoadingPatients(false);
     }
   };
 
   useEffect(() => {
-    fetchDoctorsAndFamilies();
-  }, []);
+    setFormData((prev) => ({ ...prev, medico_id: 1 }));
+    fetchPatients();
+  }, [userIdLogin, token]);
+
+  const formatDateToAPI = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}:00`;
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowPicker(Platform.OS === 'ios');
+    
+    if (selectedDate) {
+      // Ajusta os minutos para o intervalo de 30 minutos mais próximo
+      const minutes = selectedDate.getMinutes();
+      selectedDate.setMinutes(minutes < 30 ? 30 : 0);
+      selectedDate.setSeconds(0);
+      
+      // Limita o horário entre 7h e 20h
+      const hours = selectedDate.getHours();
+      if (hours < 7) {
+        selectedDate.setHours(7);
+        selectedDate.setMinutes(0);
+      } else if (hours >= 20) {
+        selectedDate.setHours(19);
+        selectedDate.setMinutes(30);
+      }
+      
+      setDate(selectedDate);
+      setFormData({...formData, data_agendada: formatDateToAPI(selectedDate)});
+    }
+  };
+
+  const showPickerModal = () => {
+    setShowPicker(true);
+  };
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      await api.post("consultas", formData);
+      const payload = {
+        medico_id: 1,
+        familia_id: formData.familia_id,
+        data_agendada: formData.data_agendada,
+        descricao: formData.descricao
+      };
+
+      await api.post("/consultas", payload);
       navigation.goBack();
     } catch (error) {
       console.error("Error saving consultation:", error);
+      alert("Erro ao agendar consulta. Verifique os dados e tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -51,12 +119,8 @@ const AddConsultation = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header fixo */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={16} color="black" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
@@ -64,9 +128,7 @@ const AddConsultation = ({ navigation }) => {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.topContainer}>
-          <View style={styles.firstContainer}>
-            <Text style={styles.title}>Agendar Nova Consulta</Text>
-          </View>
+          <Text style={styles.title}>Agendar Nova Consulta</Text>
         </View>
 
         <View style={styles.form}>
@@ -74,75 +136,64 @@ const AddConsultation = ({ navigation }) => {
             style={styles.input}
             placeholder="Descrição da consulta"
             value={formData.descricao}
-            onChangeText={(text) =>
-              setFormData({ ...formData, descricao: text })
-            }
+            onChangeText={(text) => setFormData({ ...formData, descricao: text })}
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Data e Hora (DD/MM/AAAA HH:MM)"
-            value={formData.data_agendada}
-            onChangeText={(text) =>
-              setFormData({ ...formData, data_agendada: text })
-            }
-            keyboardType="numbers-and-punctuation"
-          />
+          <Text style={styles.label}>Data e Hora</Text>
+          
+          <TouchableOpacity 
+            style={[styles.input, {justifyContent: 'center'}]}
+            onPress={showPickerModal}
+          >
+            <Text>
+              {date.toLocaleDateString('pt-BR')} às {' '}
+              {date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
+            </Text>
+          </TouchableOpacity>
+          
+          {showPicker && (
+            <DateTimePicker
+              value={date}
+              mode="datetime"
+              display="spinner"
+              onChange={handleDateChange}
+              minimumDate={new Date()}
+              minuteInterval={30}
+              locale="pt-BR"
+            />
+          )}
 
-          <Text style={styles.label}>Médico</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={formData.medico_id}
-              onValueChange={(itemValue) =>
-                setFormData({ ...formData, medico_id: itemValue })
-              }
-            >
-              {doctors.map((doctor) => (
-                <Picker.Item
-                  key={doctor.usuario_id}
-                  label={doctor.nome}
-                  value={doctor.usuario_id}
-                />
-              ))}
-            </Picker>
-          </View>
-
-          <Text style={styles.label}>Família</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={formData.familia_id}
-              onValueChange={(itemValue) =>
-                setFormData({ ...formData, familia_id: itemValue })
-              }
-            >
-              {families.map((family) => (
-                <Picker.Item
-                  key={family.usuario_id}
-                  label={family.nome}
-                  value={family.usuario_id}
-                />
-              ))}
-            </Picker>
-          </View>
-
-          <Text style={styles.label}>Status</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={formData.status}
-              onValueChange={(itemValue) =>
-                setFormData({ ...formData, status: itemValue })
-              }
-            >
-              <Picker.Item label="Agendada" value="agendada" />
-              <Picker.Item label="Realizada" value="realizada" />
-              <Picker.Item label="Cancelada" value="cancelada" />
-            </Picker>
-          </View>
+          <Text style={styles.label}>Paciente</Text>
+          {loadingPatients ? (
+            <ActivityIndicator size="small" color="#385b3e" />
+          ) : (
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={formData.familia_id}
+                onValueChange={(itemValue) =>
+                  setFormData({ ...formData, familia_id: itemValue })
+                }
+              >
+                <Picker.Item label="Selecione um paciente" value={null} />
+                {patients.map((patient) => (
+                  <Picker.Item
+                    key={patient.usuario_id}
+                    label={patient.nome}
+                    value={patient.usuario_id}
+                  />
+                ))}
+              </Picker>
+            </View>
+          )}
 
           <TouchableOpacity
-            style={styles.loginButton}
+            style={[
+              styles.loginButton,
+              (!formData.familia_id || !formData.descricao || !formData.data_agendada) &&
+                styles.disabledButton,
+            ]}
             onPress={handleSave}
-            disabled={loading}
+            disabled={loading || !formData.familia_id || !formData.descricao || !formData.data_agendada}
           >
             {loading ? (
               <ActivityIndicator color="white" />

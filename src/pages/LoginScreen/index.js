@@ -13,10 +13,11 @@ import { Feather } from "@expo/vector-icons";
 import styles from "./styles";
 import api from "../../services/api";
 import { useContextProvider } from "../../context/AuthContext";
+import { createPathConfigForStaticNavigation } from "@react-navigation/native";
 
 export default function LoginScreen({ navigation }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [loginStatus, setLoginStatus] = useState(null);
@@ -37,9 +38,9 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
-  const onChangeEmailHandler = (email) => {
-    setEmail(email);
-    console.log(email);
+  const onChangeCpfHandler = (cpf) => {
+    setCpf(cpf);
+    console.log(cpf);
   };
 
   const onChangePasswordHandler = (password) => {
@@ -49,18 +50,15 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     const payload = {
-      email: email,
+      cpf: cpf,
       senha: password,
     };
 
     try {
       setLoading(true);
       console.log(payload);
-      const response = await api.post("usuarios/login", payload);
-       setIsAdmin(response.data.user.role);
-       setToken(response.data.token)
-       setName(response.data.user.nome)
-       setPoints(response.data.user.pontos)
+      const response = await api.post("/login", payload);
+      
       const status = response.status;
       console.log("Resposta " + JSON.stringify(response.data))
       if (status === 200 || status === 201) {
@@ -81,11 +79,11 @@ export default function LoginScreen({ navigation }) {
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
       <View style={styles.form}>
-        <Text style={styles.inputLabel}>E-mail</Text>
+        <Text style={styles.inputLabel}>Cpf</Text>
         <TextInput
           style={styles.input}
-          placeholder="Digite seu e-mail"
-          onChangeText={onChangeEmailHandler}
+          placeholder="Digite seu cpf"
+          onChangeText={onChangeCpfHandler}
         />
 
         <Text style={styles.inputLabel}>Senha</Text>
