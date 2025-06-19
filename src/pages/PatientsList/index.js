@@ -1,6 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, FlatList, ActivityIndicator } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StatusBar,
+  FlatList,
+  ActivityIndicator,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
 import api from "../../services/api";
 import styles from "./styles";
 import { useContextProvider } from "../../context/AuthContext";
@@ -12,10 +19,10 @@ const PatientsList = ({ navigation }) => {
 
   const fetchPatients = async () => {
     try {
-      const response = await api.get('pacientes');
+      const response = await api.get("pacientes");
       setPatients(response.data);
     } catch (error) {
-      console.error('Error fetching patients:', error);
+      console.error("Error fetching patients:", error);
     } finally {
       setLoading(false);
     }
@@ -23,7 +30,7 @@ const PatientsList = ({ navigation }) => {
 
   const handlePatientSelect = (patientId) => {
     setSelectedPatientId(patientId);
-    navigation.navigate('TaskDiaryList');
+    navigation.navigate("TaskDiaryList");
   };
 
   useEffect(() => {
@@ -42,9 +49,9 @@ const PatientsList = ({ navigation }) => {
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
       </View>
-      
+
       <Text style={styles.pageTitle}>Selecione o paciente</Text>
-      
+
       <View style={styles.content}>
         {loading ? (
           <ActivityIndicator size="large" color="#385b3e" />
@@ -53,12 +60,17 @@ const PatientsList = ({ navigation }) => {
             data={patients}
             keyExtractor={(item) => String(item.usuario_id)}
             renderItem={({ item }) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.item}
                 onPress={() => handlePatientSelect(item.usuario_id)}
               >
                 <View style={styles.itemContent}>
-                  <Feather name="user" size={20} color="#385b3e" style={styles.userIcon} />
+                  <Feather
+                    name="user"
+                    size={20}
+                    color="#385b3e"
+                    style={styles.userIcon}
+                  />
                   <Text style={styles.patientName}>{item.nome}</Text>
                 </View>
                 <Feather name="chevron-right" size={20} color="#385b3e" />

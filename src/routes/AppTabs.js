@@ -1,9 +1,8 @@
-import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
-import HomeStack from './HomeStack';
-import TaskDiaryStack from './TaskDiaryStack';
-import ProfileStack from './ProfileStack'
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Feather } from "@expo/vector-icons"; // Alterado para Feather
+import ConsultationStack from "./ConsultationStack";
+import TaskDiaryStack from "./TaskDiaryStack";
+import ProfileStack from "./ProfileStack";
 
 const Tab = createBottomTabNavigator();
 
@@ -12,30 +11,46 @@ function AppTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#307C31', // Cor ativa
-        tabBarInactiveTintColor: '#8391A1', // Cor inativa
+        tabBarActiveTintColor: "#307C31",
+        tabBarInactiveTintColor: "#8391A1",
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          switch (route.name) {
-            case 'PatientsList':
-              iconName = focused ? 'home' : 'home-outline';
-              break;
-            case 'PatientsList':
-              iconName = focused ? 'book' : 'book-outline';
-              break;
-           
-             
-            default:
-              iconName = 'circle';
-              break;
+
+          if (route.name === "Consultas") {
+            iconName = "calendar";
+          } else if (route.name === "Diário") {
+            iconName = "book";
+          } else if (route.name === "Perfil") {
+            iconName = "user";
           }
-          return <Ionicons name={iconName} size={size} color={color} />;
+
+          return <Feather name={iconName} size={size} color={color} />;
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          marginBottom: 5,
+        },
+        tabBarStyle: {
+          height: 60,
+          paddingTop: 5,
         },
       })}
     >
-      <Tab.Screen name="Consultas" component={HomeStack} />
-      <Tab.Screen name="Diário" component={TaskDiaryStack} /> 
-      <Tab.Screen name="Perfil" component={ProfileStack} />   
+      <Tab.Screen
+        name="Consultas"
+        component={ConsultationStack}
+        options={{ title: "Consultas" }}
+      />
+      <Tab.Screen
+        name="Diário"
+        component={TaskDiaryStack}
+        options={{ title: "Diário" }}
+      />
+      <Tab.Screen
+        name="Perfil"
+        component={ProfileStack}
+        options={{ title: "Perfil" }}
+      />
     </Tab.Navigator>
   );
 }

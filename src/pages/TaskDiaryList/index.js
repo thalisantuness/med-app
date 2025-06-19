@@ -6,7 +6,6 @@ import styles from "./styles";
 
 const TaskDiaryList = ({ navigation }) => {
   const handleDayPress = (day) => {
-    // Formata a data no formato que seu sistema espera (YYYY-MM)
     const [year, month, dayOfMonth] = day.dateString.split('-');
     const formattedMonth = `${year}-${month}`;
     
@@ -46,7 +45,6 @@ const TaskDiaryList = ({ navigation }) => {
           }}
           onDayPress={handleDayPress}
           markedDates={{
-            // Você pode adicionar marcações especiais aqui se necessário
           }}
         />
       </View>

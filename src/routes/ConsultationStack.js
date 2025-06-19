@@ -4,7 +4,7 @@ import AddConsultation from "../pages/AddConsultation";
 
 const Stack = createNativeStackNavigator();
 
-function HomeStack() {
+function ConsultationStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ConsultationsList" component={ConsultationsList} />
@@ -13,4 +13,4 @@ function HomeStack() {
   );
 }
 
-export default HomeStack;
+export default ConsultationStack;

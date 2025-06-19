@@ -8,15 +8,13 @@ export default StyleSheet.create({
     paddingTop: 90,
     paddingHorizontal: 10,
   },
-  titleRegisterLabel:{
-    // fontFamily: 'Alata-Regular',
+  titleRegisterLabel: {
     fontSize: 30,
     color: "black",
     marginBottom: 5,
   },
 
   label: {
-    // fontFamily: 'Alata-Regular',
     fontSize: 16,
     marginBottom: 5,
     alignSelf: "flex-start",
@@ -32,15 +30,14 @@ export default StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 8,
   },
-  header:{
-
-    width: '80%',
+  header: {
+    width: "80%",
   },
 
   inputRegister: {
     width: "100%",
     fontSize: 16,
-    // fontFamily: 'Alata-Regular',
+
     marginBottom: 5,
     color: "#A7A6A5",
     width: "100%",
@@ -59,7 +56,7 @@ export default StyleSheet.create({
   },
   buttonRegisterText: {
     color: "#F4F6F5",
-    fontFamily: "Alata-Regular",
+
     fontSize: 16,
     borderRadius: 16,
     marginBottom: 0,
@@ -77,34 +74,32 @@ export default StyleSheet.create({
   signupRegisterText: {
     fontSize: 16,
     color: "#A7A6A5",
-    fontFamily: "Alata-Regular",
   },
   signupLinkRegisterText: {
     color: "#E63E8F",
     textDecorationLine: "underline",
     marginLeft: 5,
-    fontFamily: "Alata-Regular",
   },
   errorMessage: {
     color: "red",
     fontSize: 14,
   },
   errorInput: {
-    borderColor: "red", 
+    borderColor: "red",
   },
   centeredView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 22,
   },
   modalView: {
     margin: 20,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 20,
     padding: 35,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -119,27 +114,22 @@ export default StyleSheet.create({
     elevation: 2,
   },
   buttonOpen: {
-    backgroundColor: '#F194FF',
+    backgroundColor: "#F194FF",
   },
   buttonClose: {
     backgroundColor: "#E63E8F",
   },
   textStyle: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    fontFamily: "Alata-Regular",
-
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
   },
   modalText: {
     marginBottom: 15,
-    textAlign: 'center',
-    fontFamily: "Alata-Regular",
+    textAlign: "center",
   },
-  checkLayout:{
-    display: 'flex',
-    flexDirection: 'row'
-  }
-
-  
+  checkLayout: {
+    display: "flex",
+    flexDirection: "row",
+  },
 });

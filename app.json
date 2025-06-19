@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "indica-mais",
-    "slug": "indica-mais",
+    "name": "clinica-cleuza-canan",
+    "slug": "clinica-cleuza-canan",
     "newArchEnabled": true,
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,7 @@
       "supportsTablet": true
     },
     "android": {
-       "package": "com.thalisantunes.indicamais",
+       "package": "com.thalisantunes.clinica-cleuza-canan",
        "versionCode": 1,
        "permissions": [],
       "adaptiveIcon": {
