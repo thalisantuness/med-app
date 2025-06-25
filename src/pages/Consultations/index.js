@@ -82,7 +82,14 @@ const ConsultationsList = ({ navigation }) => {
             data={consultations}
             keyExtractor={(item) => String(item.consulta_id)}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.item}>
+              <TouchableOpacity
+                style={styles.item}
+                onPress={() =>
+                  navigation.navigate("ConsultationDetails", {
+                    consulta_id: item.consulta_id,
+                  })
+                }
+              >
                 <View style={styles.itemHeader}>
                   <Text style={styles.title}>{item.descricao}</Text>
                   <View

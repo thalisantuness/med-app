@@ -98,7 +98,7 @@ export default StyleSheet.create({
     width: '60%',
     paddingVertical: 15,
     paddingHorizontal: 30,
-    backgroundColor: '#E63E8F',
+    backgroundColor: '#385b3e',
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -133,11 +133,11 @@ export default StyleSheet.create({
     },},
     buttonCloseModalLogin:{
       marginTop: 20,
-      // fontFamily: 'Alata-Regular',
-      backgroundColor: '#E63E8F',
+      
+      backgroundColor: '#385b3e',
       width: 90,
       height: 30,
-    borderRadius: '50%',
+    borderRadius: '10%',
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',

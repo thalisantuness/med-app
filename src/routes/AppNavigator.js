@@ -12,11 +12,11 @@ function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {/* {isAuth ? ( */}
+     {isAuth ? ( 
         <Stack.Screen name="App" component={AppTabs} />
-        {/* ) : (
+        ) : (
            <Stack.Screen name="Auth" component={LoginStack} />
-         )} */}
+         )}
       </Stack.Navigator>
     </NavigationContainer>
   );

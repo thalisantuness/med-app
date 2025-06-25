@@ -22,7 +22,7 @@ export default function LoginScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [loginStatus, setLoginStatus] = useState(null);
   const [loading, setLoading] = useState(false); 
-  const { setName, setIsAdmin, setIsAuth, setToken, setPoints } = useContextProvider();
+  const { setIsAdmin, setIsAuth, } = useContextProvider();
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
