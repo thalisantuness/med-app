@@ -4,26 +4,28 @@ const AuthContext = createContext();
 
 export function ContextProvider({ children }) {
   const [token, setToken] = useState("");
-  const [isAuth, setIsAuth] = useState(false)
-
-  const [name, setName] = useState("");
-
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  const [emailLogin, setEmailLogin] = useState("")
-
-  const [userIdLogin, setUserIdLogin] = useState(0)
-
-  const [indicationsLogin, setIndicationsLogin] = useState([])  
-
-  const [points, setPoints] = useState(0);	
+  const [isAuth, setIsAuth] = useState(false);
+  const [user, setUser] = useState({
+    id: null,
+    name: "",
+    role: "", // 'medico' ou outro valor
+    cpf: ""
+  });
 
   const [selectedPatientId, setSelectedPatientId] = useState(null);
 
   return (
     <AuthContext.Provider
-      value={{ token, isAuth, setIsAuth, setToken, name, setName, isAdmin, setIsAdmin, emailLogin, 
-        setEmailLogin, userIdLogin,  selectedPatientId, setSelectedPatientId, setUserIdLogin, indicationsLogin, setIndicationsLogin, points, setPoints }}
+      value={{ 
+        token, 
+        setToken,
+        isAuth, 
+        setIsAuth,
+        user,
+        setUser,
+        selectedPatientId, 
+        setSelectedPatientId
+      }}
     >
       {children}
     </AuthContext.Provider>
