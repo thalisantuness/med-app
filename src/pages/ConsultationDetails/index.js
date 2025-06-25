@@ -14,10 +14,12 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import api from "../../services/api";
 import styles from "./styles";
 import { useNavigation } from "@react-navigation/native";
+import { useContextProvider } from "../../context/AuthContext";
 
 const ConsultationDetails = ({ route }) => {
   const { consulta_id } = route.params;
   const navigation = useNavigation();
+  const { token, user } = useContextProvider();
   const [consultation, setConsultation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -31,9 +33,15 @@ const ConsultationDetails = ({ route }) => {
     status: "",
   });
 
+  const isMedico = user?.role === 'medico';
+
   const fetchConsultationDetails = async () => {
     try {
-      const response = await api.get(`consultas/${consulta_id}`);
+      const response = await api.get(`consultas/${consulta_id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setConsultation(response.data);
       setFormData({
         descricao: response.data.descricao,
@@ -41,15 +49,23 @@ const ConsultationDetails = ({ route }) => {
       });
     } catch (error) {
       console.error("Erro ao buscar detalhes da consulta:", error);
-      Alert.alert("Erro", "Não foi possível carregar os detalhes da consulta");
+      if (error.response?.status === 401) {
+        Alert.alert("Sessão expirada", "Por favor, faça login novamente");
+        navigation.navigate('Login');
+      } else {
+        Alert.alert("Erro", "Não foi possível carregar os detalhes da consulta");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchConsultationDetails();
-  }, [consulta_id]);
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchConsultationDetails();
+    });
+    return unsubscribe;
+  }, [navigation, token]);
 
   const handleDelete = async () => {
     Alert.alert(
@@ -64,7 +80,11 @@ const ConsultationDetails = ({ route }) => {
           text: "Excluir",
           onPress: async () => {
             try {
-              await api.delete(`consultas/${consulta_id}`);
+              await api.delete(`consultas/${consulta_id}`, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
               Alert.alert("Sucesso", "Consulta excluída com sucesso");
               navigation.goBack();
             } catch (error) {
@@ -79,7 +99,11 @@ const ConsultationDetails = ({ route }) => {
 
   const handleUpdate = async () => {
     try {
-      await api.put(`consultas/${consulta_id}`, formData);
+      await api.put(`consultas/${consulta_id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       Alert.alert("Sucesso", "Consulta atualizada com sucesso");
       setEditModalVisible(false);
       fetchConsultationDetails();
@@ -94,6 +118,10 @@ const ConsultationDetails = ({ route }) => {
       const formattedDate = newDate.toISOString().replace("T", " ").split(".")[0];
       await api.put(`consultas/${consulta_id}/remarcar`, {
         nova_data: formattedDate,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       Alert.alert("Sucesso", "Consulta remarcada com sucesso");
       setRescheduleModalVisible(false);
@@ -106,7 +134,11 @@ const ConsultationDetails = ({ route }) => {
 
   const handleCancel = async () => {
     try {
-      await api.put(`consultas/${consulta_id}/cancelar`);
+      await api.put(`consultas/${consulta_id}/cancelar`, null, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       Alert.alert("Sucesso", "Consulta cancelada com sucesso");
       fetchConsultationDetails();
     } catch (error) {
@@ -117,19 +149,19 @@ const ConsultationDetails = ({ route }) => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("pt-BR") + " " + date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleDateString("pt-BR") + " " + date.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
   };
 
   const getStatusColor = (status) => {
     switch (status) {
       case "agendada":
-        return "#FFA500"; // Laranja
+        return "#FFA500";
       case "realizada":
-        return "#4CAF50"; // Verde
+        return "#4CAF50";
       case "cancelada":
-        return "#F44336"; // Vermelho
+        return "#F44336";
       default:
-        return "#9E9E9E"; // Cinza
+        return "#9E9E9E";
     }
   };
 
@@ -189,46 +221,48 @@ const ConsultationDetails = ({ route }) => {
         </View>
       </View>
 
-      <View style={styles.actionsContainer}>
-        {consultation.status !== "cancelada" && (
-          <>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.editButton]}
-              onPress={() => setEditModalVisible(true)}
-            >
-              <Feather name="edit" size={16} color="white" />
-              <Text style={styles.actionButtonText}>Editar</Text>
-            </TouchableOpacity>
+      {isMedico && (
+        <View style={styles.actionsContainer}>
+          {consultation.status !== "cancelada" && (
+            <>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.editButton]}
+                onPress={() => setEditModalVisible(true)}
+              >
+                <Feather name="edit" size={16} color="white" />
+                <Text style={styles.actionButtonText}>Editar</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.rescheduleButton]}
-              onPress={() => {
-                setNewDate(new Date(consultation.data_agendada));
-                setRescheduleModalVisible(true);
-              }}
-            >
-              <Feather name="calendar" size={16} color="white" />
-              <Text style={styles.actionButtonText}>Remarcar</Text>
-            </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.rescheduleButton]}
+                onPress={() => {
+                  setNewDate(new Date(consultation.data_agendada));
+                  setRescheduleModalVisible(true);
+                }}
+              >
+                <Feather name="calendar" size={16} color="white" />
+                <Text style={styles.actionButtonText}>Remarcar</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.cancelButton]}
-              onPress={handleCancel}
-            >
-              <Feather name="x-circle" size={16} color="white" />
-              <Text style={styles.actionButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-          </>
-        )}
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.cancelButton]}
+                onPress={handleCancel}
+              >
+                <Feather name="x-circle" size={16} color="white" />
+                <Text style={styles.actionButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+            </>
+          )}
 
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => setModalVisible(true)}
-        >
-          <Feather name="trash-2" size={16} color="white" />
-          <Text style={styles.actionButtonText}>Excluir</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.deleteButton]}
+            onPress={() => setModalVisible(true)}
+          >
+            <Feather name="trash-2" size={16} color="white" />
+            <Text style={styles.actionButtonText}>Excluir</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Modal de confirmação de exclusão */}
       <Modal

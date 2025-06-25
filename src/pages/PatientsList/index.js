@@ -15,14 +15,35 @@ import { useContextProvider } from "../../context/AuthContext";
 const PatientsList = ({ navigation }) => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { token, setSelectedPatientId } = useContextProvider();
+  const { token, setSelectedPatientId, user } = useContextProvider();
 
   const fetchPatients = async () => {
     try {
-      const response = await api.get("usuarios/pacientes");
-      setPatients(response.data);
+      let response;
+      
+      if (user?.role === 'familia') {
+        // Se for família, busca apenas os próprios dados
+        response = await api.get(`usuarios/${user.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        // Transforma o único usuário em um array para manter a mesma estrutura
+        setPatients([response.data]);
+      } else {
+        // Se for médico, busca todos os pacientes
+        response = await api.get("usuarios/pacientes", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setPatients(response.data);
+      }
     } catch (error) {
       console.error("Error fetching patients:", error);
+      if (error.response?.status === 401) {
+        navigation.navigate('Login');
+      }
     } finally {
       setLoading(false);
     }
@@ -34,8 +55,11 @@ const PatientsList = ({ navigation }) => {
   };
 
   useEffect(() => {
-    fetchPatients();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchPatients();
+    });
+    return unsubscribe;
+  }, [navigation, token, user]);
 
   return (
     <View style={styles.container}>
@@ -50,7 +74,9 @@ const PatientsList = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.pageTitle}>Selecione o paciente</Text>
+      <Text style={styles.pageTitle}>
+        {user?.role === 'familia' ? 'Meu Perfil' : 'Selecione o paciente'}
+      </Text>
 
       <View style={styles.content}>
         {loading ? (
@@ -73,7 +99,9 @@ const PatientsList = ({ navigation }) => {
                   />
                   <Text style={styles.patientName}>{item.nome}</Text>
                 </View>
-                <Feather name="chevron-right" size={20} color="#385b3e" />
+                {user?.role === 'medico' && (
+                  <Feather name="chevron-right" size={20} color="#385b3e" />
+                )}
               </TouchableOpacity>
             )}
           />

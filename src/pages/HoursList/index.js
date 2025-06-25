@@ -8,7 +8,7 @@ import { useContextProvider } from "../../context/AuthContext";
 const HoursList = ({ route, navigation }) => {
   const { month, day, dateString } = route.params;
   const [year, monthNum] = month.split('-');
-  const { token, selectedPatientId, userIdLogin } = useContextProvider();
+  const { token, selectedPatientId, user } = useContextProvider();
   const [loading, setLoading] = useState(true);
   const [savedTasks, setSavedTasks] = useState([]);
   
@@ -29,31 +29,53 @@ const HoursList = ({ route, navigation }) => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await api.get(`/medicos/2/pacientes/${selectedPatientId}/tarefas`, {
-          params: { 
-            dia: day,
-            mes_ano: month // Adicionei mes_ano também para garantir
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log("Tarefas filtradas:", response.data);
+        let response;
+        
+        if (user?.role === 'medico') {
+          // Médico vê tarefas do paciente selecionado
+          response = await api.get(`/medicos/${user.id}/pacientes/${selectedPatientId}/tarefas`, {
+            params: { 
+              dia: day,
+              mes_ano: month
+            },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        } else {
+          // Família vê apenas suas próprias tarefas
+          response = await api.get(`/pacientes/${user.id}/tarefas`, {
+            params: { 
+              dia: day,
+              mes_ano: month
+            },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        }
+        
+        console.log("Tarefas carregadas:", response.data);
         setSavedTasks(response.data);
       } catch (error) {
         console.error("Erro ao buscar tarefas:", error);
+        if (error.response?.status === 401) {
+          navigation.navigate('Login');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchTasks();
-  }, [month, day, selectedPatientId, token, userIdLogin]);
+  }, [month, day, selectedPatientId, token, user]);
 
-  // Restante do código permanece igual...
   const getTaskDescription = (hour) => {
+    // Verifica se há uma tarefa salva para este horário
     const savedTask = savedTasks.find(task => task.hora === hour);
     if (savedTask) return savedTask.descricao;
+    
+    // Se não houver tarefa salva, verifica se é uma tarefa fixa
     return fixedTasks[hour] || null;
   };
 

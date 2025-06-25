@@ -10,25 +10,40 @@ import {
 import { Feather } from "@expo/vector-icons";
 import api from "../../services/api";
 import styles from "./styles";
+import { useContextProvider } from "../../context/AuthContext";
 
 const ConsultationsList = ({ navigation }) => {
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { token, user } = useContextProvider();
 
   const fetchConsultations = async () => {
     try {
-      const response = await api.get("consultas");
+      const response = await api.get("consultas", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setConsultations(response.data);
     } catch (error) {
       console.error("Error fetching consultations:", error);
+      // Você pode adicionar tratamento de erro mais específico aqui
+      if (error.response?.status === 401) {
+        // Token inválido ou expirado
+        navigation.navigate("Login"); // Redireciona para login
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchConsultations();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchConsultations();
+    });
+    
+    return unsubscribe;
+  }, [navigation, token]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -56,20 +71,16 @@ const ConsultationsList = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar backgroundColor="white" barStyle="dark-content" />
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Feather name="arrow-left" size={16} color="black" />
-          <Text style={styles.backText}>Voltar</Text>
-        </TouchableOpacity>
+       
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate("AddConsultation")}
-        >
-          <Feather name="plus" size={20} color="white" />
-        </TouchableOpacity>
+        {user?.role === 'medico' && (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => navigation.navigate("AddConsultation")}
+          >
+            <Feather name="plus" size={20} color="white" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <Text style={styles.pageTitle}>Lista de Consultas</Text>
