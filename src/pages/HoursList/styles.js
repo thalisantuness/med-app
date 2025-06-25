@@ -109,4 +109,11 @@ export default StyleSheet.create({
     color: "#666",
     marginTop: 4,
   },
+  iconsContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+icon: {
+  marginLeft: 5,
+},
 });

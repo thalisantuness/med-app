@@ -8,7 +8,7 @@ import { useContextProvider } from "../../context/AuthContext";
 const HoursList = ({ route, navigation }) => {
   const { month, day, dateString } = route.params;
   const [year, monthNum] = month.split('-');
-  const { token, selectedPatientId } = useContextProvider();
+  const { token, selectedPatientId, userIdLogin } = useContextProvider();
   const [loading, setLoading] = useState(true);
   const [savedTasks, setSavedTasks] = useState([]);
   
@@ -29,12 +29,16 @@ const HoursList = ({ route, navigation }) => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await api.get(`/medicos/1/pacientes/${selectedPatientId}/tarefas`, {
-          params: { mes_ano: month, dia: day },
+        const response = await api.get(`/medicos/2/pacientes/${selectedPatientId}/tarefas`, {
+          params: { 
+            dia: day,
+            mes_ano: month // Adicionei mes_ano também para garantir
+          },
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+        console.log("Tarefas filtradas:", response.data);
         setSavedTasks(response.data);
       } catch (error) {
         console.error("Erro ao buscar tarefas:", error);
@@ -44,15 +48,18 @@ const HoursList = ({ route, navigation }) => {
     };
 
     fetchTasks();
-  }, [month, day, selectedPatientId, token]);
+  }, [month, day, selectedPatientId, token, userIdLogin]);
 
+  // Restante do código permanece igual...
   const getTaskDescription = (hour) => {
-    // Verifica se há uma tarefa salva para este horário
     const savedTask = savedTasks.find(task => task.hora === hour);
     if (savedTask) return savedTask.descricao;
-    
-    // Se não houver tarefa salva, verifica se é uma tarefa fixa
     return fixedTasks[hour] || null;
+  };
+
+  const getTaskStatus = (hour) => {
+    const savedTask = savedTasks.find(task => task.hora === hour);
+    return savedTask ? savedTask.check : false;
   };
 
   const hasTask = (hour) => {
@@ -88,6 +95,7 @@ const HoursList = ({ route, navigation }) => {
             const description = getTaskDescription(item);
             const isFixedTask = fixedTasks[item] !== undefined;
             const isSavedTask = savedTasks.some(task => task.hora === item);
+            const isChecked = getTaskStatus(item);
 
             return (
               <TouchableOpacity
@@ -108,12 +116,15 @@ const HoursList = ({ route, navigation }) => {
                 <Text style={styles.title}>
                   {item}:00 {description && `- ${description}`}
                 </Text>
-                {isFixedTask && (
-                  <Feather name="lock" size={16} color="#385b3e" />
-                )}
-                {isSavedTask && !isFixedTask && (
-                  <Feather name="check-circle" size={16} color="#385b3e" />
-                )}
+                
+                <View style={styles.iconsContainer}>
+                  {isFixedTask && (
+                    <Feather name="lock" size={16} color="#385b3e" style={styles.icon} />
+                  )}
+                  {(isSavedTask || isFixedTask) && isChecked && (
+                    <Feather name="check-circle" size={16} color="#4CAF50" style={styles.icon} />
+                  )}
+                </View>
               </TouchableOpacity>
             );
           }}

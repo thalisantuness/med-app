@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Modal,
+  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import api from "../../services/api";
@@ -19,35 +21,65 @@ const TaskForm = ({ route, navigation }) => {
     descricao: fixedTask || "",
     check: false,
   });
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showFinalConfirmationModal, setShowFinalConfirmationModal] = useState(false);
+  const [isSavingForAll, setIsSavingForAll] = useState(false);
 
   const isFixedTask = !!fixedTask;
 
-  const saveTask = async () => {
+  const saveTask = async (forAllFamilies = false) => {
     const payload = {
-      mes_ano: month, // "2025-06"
-      dia: day, // número (ex: 19)
-      hora: hour, // número (ex: 12)
+      mes_ano: month,
+      dia: day,
+      hora: hour,
       check: taskData.check,
       descricao: taskData.descricao,
-      paciente_id: selectedPatientId, // ID do paciente selecionado
-      medico_id: 1, // ID do médico logado
+      paciente_id: forAllFamilies ? null : selectedPatientId,
+      medico_id: 2,
     };
 
     setLoading(true);
     try {
-        console.log(payload)
-      await api.post("tarefas", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      if (forAllFamilies) {
+        // Chamada para o endpoint de todas as famílias
+        await api.post("tarefas/todas-familias", payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } else {
+        // Chamada normal para uma única tarefa
+        await api.post("tarefas", payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
       navigation.goBack();
     } catch (error) {
       console.error("Erro ao salvar tarefa:", error);
-      alert("Erro ao salvar tarefa. Tente novamente.");
+      Alert.alert("Erro", "Erro ao salvar tarefa. Tente novamente.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSavePress = () => {
+    if (isFixedTask && taskData.check) {
+      setShowConfirmationModal(true);
+    } else {
+      saveTask();
+    }
+  };
+
+  const handleConfirmForAll = () => {
+    setShowConfirmationModal(false);
+    setShowFinalConfirmationModal(true);
+  };
+
+  const handleFinalConfirm = () => {
+    setShowFinalConfirmationModal(false);
+    saveTask(true); // Salva para todas as famílias
   };
 
   return (
@@ -89,8 +121,8 @@ const TaskForm = ({ route, navigation }) => {
 
         <TouchableOpacity
           style={styles.loginButton}
-          onPress={saveTask}
-          disabled={loading} // Removida a restrição para tarefas fixas
+          onPress={handleSavePress}
+          disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="white" />
@@ -101,6 +133,69 @@ const TaskForm = ({ route, navigation }) => {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Modal de confirmação para todas as famílias */}
+      <Modal
+        transparent={true}
+        visible={showConfirmationModal}
+        onRequestClose={() => setShowConfirmationModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Atenção</Text>
+            <Text style={styles.modalText}>
+              Quer marcar esta tarefa como concluída para todos os pacientes?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowConfirmationModal(false);
+                  saveTask(false); // Salva apenas para este paciente
+                }}
+              >
+                <Text style={styles.modalButtonText}>Não, apenas este</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleConfirmForAll}
+              >
+                <Text style={styles.modalButtonText}>Sim, para todos</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de confirmação final */}
+      <Modal
+        transparent={true}
+        visible={showFinalConfirmationModal}
+        onRequestClose={() => setShowFinalConfirmationModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirmação Final</Text>
+            <Text style={styles.modalText}>
+              Tem certeza que deseja marcar esta tarefa como concluída para TODOS os pacientes?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowFinalConfirmationModal(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleFinalConfirm}
+              >
+                <Text style={styles.modalButtonText}>Confirmar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
