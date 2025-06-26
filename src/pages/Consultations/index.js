@@ -19,18 +19,28 @@ const ConsultationsList = ({ navigation }) => {
 
   const fetchConsultations = async () => {
     try {
-      const response = await api.get("consultas", {
+      let endpoint;
+      
+      if (user?.role === 'medico') {
+        endpoint = `medicos/${user.id}/consultas`;
+      } else {
+        endpoint = `pacientes/${user.id}/consultas`;
+      }
+
+      const response = await api.get(endpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      
       setConsultations(response.data);
     } catch (error) {
       console.error("Error fetching consultations:", error);
-      // Você pode adicionar tratamento de erro mais específico aqui
       if (error.response?.status === 401) {
-        // Token inválido ou expirado
-        navigation.navigate("Login"); // Redireciona para login
+        navigation.navigate("Login");
+      } else {
+        // Mostrar mensagem de erro para o usuário
+        alert("Erro ao carregar consultas. Tente novamente mais tarde.");
       }
     } finally {
       setLoading(false);
@@ -43,7 +53,7 @@ const ConsultationsList = ({ navigation }) => {
     });
     
     return unsubscribe;
-  }, [navigation, token]);
+  }, [navigation, token, user]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -57,13 +67,29 @@ const ConsultationsList = ({ navigation }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case "agendada":
-        return "#FFA500"; // Laranja
+        return "#FFA500";
       case "realizada":
-        return "#4CAF50"; // Verde
+        return "#4CAF50";
       case "cancelada":
-        return "#F44336"; // Vermelho
+        return "#F44336";
       default:
-        return "#9E9E9E"; // Cinza
+        return "#9E9E9E";
+    }
+  };
+
+  const renderFamilyOrDoctorInfo = (item) => {
+    if (user?.role === 'medico') {
+      return (
+        <Text style={styles.familyText}>
+          Paciente: {item.Familia?.nome || "Nome não disponível"}
+        </Text>
+      );
+    } else {
+      return (
+        <Text style={styles.doctorText}>
+          Médico: {item.Medico?.nome || "Nome não disponível"}
+        </Text>
+      );
     }
   };
 
@@ -71,8 +97,6 @@ const ConsultationsList = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar backgroundColor="white" barStyle="dark-content" />
       <View style={styles.header}>
-       
-
         {user?.role === 'medico' && (
           <TouchableOpacity
             style={styles.addButton}
@@ -83,11 +107,15 @@ const ConsultationsList = ({ navigation }) => {
         )}
       </View>
 
-      <Text style={styles.pageTitle}>Lista de Consultas</Text>
+      <Text style={styles.pageTitle}>
+        {user?.role === 'medico' ? "Minhas Consultas" : "Consultas da Família"}
+      </Text>
 
       <View style={styles.content}>
         {loading ? (
           <ActivityIndicator size="large" color="#000000" />
+        ) : consultations.length === 0 ? (
+          <Text style={styles.emptyMessage}>Nenhuma consulta encontrada</Text>
         ) : (
           <FlatList
             data={consultations}
@@ -115,17 +143,11 @@ const ConsultationsList = ({ navigation }) => {
                   </View>
                 </View>
 
-                <Text style={styles.familyText}>
-                  Família: {item.Familia.nome}
-                </Text>
-                <Text style={styles.doctorText}>
-                  Médico: {item.Medico.nome}
-                </Text>
+                {renderFamilyOrDoctorInfo(item)}
 
                 <View style={styles.dateContainer}>
                   <Feather name="calendar" size={14} color="#385b3e" />
                   <Text style={styles.dateText}>
-                    {" "}
                     {formatDate(item.data_agendada)}
                   </Text>
                 </View>

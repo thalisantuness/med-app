@@ -145,4 +145,19 @@ export default StyleSheet.create({
   datePickerButtonText: {
     fontSize: 16,
   },
+  pickerContainer: {
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 5,
+  marginBottom: 15,
+  color: '#000000',
+  overflow: 'hidden',
+},
+switchContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: 15,
+  paddingVertical: 10,
+},
 });

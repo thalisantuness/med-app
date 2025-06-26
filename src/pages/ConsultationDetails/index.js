@@ -8,6 +8,7 @@ import {
   ScrollView,
   Modal,
   TextInput,
+  Switch,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -30,7 +31,10 @@ const ConsultationDetails = ({ route }) => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [formData, setFormData] = useState({
     descricao: "",
-    status: "",
+    realizada: false,
+    data_agendada: "",
+    medico_id: null,
+    familia_id: null,
   });
 
   const isMedico = user?.role === 'medico';
@@ -45,7 +49,10 @@ const ConsultationDetails = ({ route }) => {
       setConsultation(response.data);
       setFormData({
         descricao: response.data.descricao,
-        status: response.data.status,
+        realizada: response.data.status === "realizada",
+        data_agendada: response.data.data_agendada,
+        medico_id: response.data.medico_id,
+        familia_id: response.data.familia_id
       });
     } catch (error) {
       console.error("Erro ao buscar detalhes da consulta:", error);
@@ -99,7 +106,16 @@ const ConsultationDetails = ({ route }) => {
 
   const handleUpdate = async () => {
     try {
-      await api.put(`consultas/${consulta_id}`, formData, {
+      const payload = {
+        descricao: formData.descricao,
+        status: formData.realizada ? "realizada" : "agendada",
+        realizada: formData.realizada,
+        data_agendada: consultation.data_agendada,
+        medico_id: consultation.medico_id,
+        familia_id: consultation.familia_id
+      };
+
+      await api.put(`consultas/${consulta_id}`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -295,7 +311,7 @@ const ConsultationDetails = ({ route }) => {
         </View>
       </Modal>
 
-      {/* Modal de edição */}
+      {/* Modal de edição simplificado */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -306,12 +322,37 @@ const ConsultationDetails = ({ route }) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Editar Consulta</Text>
             
+            <Text style={styles.label}>Descrição</Text>
             <TextInput
               style={styles.input}
-              placeholder="Descrição"
+              placeholder="Descrição da consulta"
               value={formData.descricao}
               onChangeText={(text) => setFormData({...formData, descricao: text})}
             />
+
+            <View style={styles.switchContainer}>
+              <Text style={styles.label}>Consulta realizada?</Text>
+              <Switch
+                value={formData.realizada}
+                onValueChange={(value) => setFormData({...formData, realizada: value})}
+                trackColor={{ false: "#767577", true: "#4CAF50" }}
+                thumbColor={formData.realizada ? "#fff" : "#f4f3f4"}
+              />
+            </View>
+
+            {formData.realizada && (
+              <>
+                <Text style={styles.label}>Data Realizada</Text>
+                <TouchableOpacity 
+                  style={styles.datePickerButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={styles.datePickerButtonText}>
+                    {new Date().toLocaleDateString('pt-BR')}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
 
             <View style={styles.modalButtons}>
               <TouchableOpacity 

@@ -22,12 +22,13 @@ const AddConsultation = ({ navigation }) => {
     descricao: "",
     data_agendada: "",
     status: "agendada",
-    medico_id: null,
     familia_id: null,
   });
   const [patients, setPatients] = useState([]);
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
+
+  const { token, user } = useContextProvider(); // Alterado para pegar o user completo
 
   // Ajusta o horário inicial para o próximo intervalo de 30 minutos
   useEffect(() => {
@@ -40,24 +41,26 @@ const AddConsultation = ({ navigation }) => {
     setDate(now);
   }, []);
 
-  const { userIdLogin, token } = useContextProvider();
-
   const fetchPatients = async () => {
     try {
       setLoadingPatients(true);
-      const response = await api.get("/usuarios/pacientes");
+      const response = await api.get("/usuarios/pacientes", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setPatients(response.data);
     } catch (error) {
       console.error("Error fetching patients:", error);
+      alert("Erro ao carregar pacientes. Tente novamente mais tarde.");
     } finally {
       setLoadingPatients(false);
     }
   };
 
   useEffect(() => {
-    setFormData((prev) => ({ ...prev, medico_id: 1 }));
     fetchPatients();
-  }, [userIdLogin, token]);
+  }, [token]);
 
   const formatDateToAPI = (date) => {
     const year = date.getFullYear();
@@ -101,13 +104,18 @@ const AddConsultation = ({ navigation }) => {
     setLoading(true);
     try {
       const payload = {
-        medico_id: 1,
+        medico_id: user.id, // Usando o ID do médico logado
         familia_id: formData.familia_id,
         data_agendada: formData.data_agendada,
-        descricao: formData.descricao
+        descricao: formData.descricao,
+        status: "agendada" // Adicionando status explicitamente
       };
 
-      await api.post("/consultas", payload);
+      await api.post("/consultas", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       navigation.goBack();
     } catch (error) {
       console.error("Error saving consultation:", error);
