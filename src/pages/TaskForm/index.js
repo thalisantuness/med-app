@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -14,18 +14,32 @@ import styles from "./styles";
 import { useContextProvider } from "../../context/AuthContext";
 
 const TaskForm = ({ route, navigation }) => {
-  const { month, day, hour, fixedTask, dateString } = route.params;
-  const { token, selectedPatientId, userIdLogin } = useContextProvider();
+  const { month, day, hour, fixedTask, dateString, savedTask, isEditing: initialEditing = false } = route.params;
+  const { token, selectedPatientId, user } = useContextProvider();
   const [loading, setLoading] = useState(false);
-  const [taskData, setTaskData] = useState({
+  const [isEditing, setIsEditing] = useState(initialEditing);
+  const [taskData, setTaskData] = useState(savedTask ? {
+    descricao: savedTask.descricao,
+    check: savedTask.check,
+    tarefa_id: savedTask.tarefa_id
+  } : {
     descricao: fixedTask || "",
-    check: false,
+    check: false
   });
+
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showFinalConfirmationModal, setShowFinalConfirmationModal] = useState(false);
-  const [isSavingForAll, setIsSavingForAll] = useState(false);
 
   const isFixedTask = !!fixedTask;
+  const isSavedTask = !!savedTask;
+  const isMedico = user?.role === 'medico';
+  const isFamilia = user?.role === 'familia';
+
+  // Se for família e não tiver tarefa salva, volta para lista
+  if (isFamilia && !isSavedTask) {
+    navigation.goBack();
+    return null;
+  }
 
   const saveTask = async (forAllFamilies = false) => {
     const payload = {
@@ -35,24 +49,23 @@ const TaskForm = ({ route, navigation }) => {
       check: taskData.check,
       descricao: taskData.descricao,
       paciente_id: forAllFamilies ? null : selectedPatientId,
-      medico_id: 2,
+      medico_id: user.id,
     };
 
     setLoading(true);
     try {
-      if (forAllFamilies) {
-        // Chamada para o endpoint de todas as famílias
+      if (isSavedTask && isEditing) {
+        await api.put(`/tarefas/${taskData.tarefa_id}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setIsEditing(false);
+      } else if (forAllFamilies) {
         await api.post("tarefas/todas-familias", payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        // Chamada normal para uma única tarefa
         await api.post("tarefas", payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
       }
       navigation.goBack();
@@ -64,8 +77,12 @@ const TaskForm = ({ route, navigation }) => {
     }
   };
 
+  const handleEditPress = () => {
+    setIsEditing(true);
+  };
+
   const handleSavePress = () => {
-    if (isFixedTask && taskData.check) {
+    if (isFixedTask && taskData.check && isMedico) {
       setShowConfirmationModal(true);
     } else {
       saveTask();
@@ -79,8 +96,14 @@ const TaskForm = ({ route, navigation }) => {
 
   const handleFinalConfirm = () => {
     setShowFinalConfirmationModal(false);
-    saveTask(true); // Salva para todas as famílias
+    saveTask(true);
   };
+
+  // Determina se os campos devem estar editáveis
+  const isDescricaoEditable = isMedico && (isEditing || !isSavedTask) && !isFixedTask;
+  const isCheckboxEditable = isMedico && (isEditing || !isSavedTask); // Checkbox editável em edição OU para novas tarefas
+  const showSaveButton = isMedico && (isEditing || !isSavedTask);
+  const showEditButton = isMedico && isSavedTask && !isEditing;
 
   return (
     <View style={styles.container}>
@@ -89,6 +112,13 @@ const TaskForm = ({ route, navigation }) => {
           <Feather name="arrow-left" size={16} color="black" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
+        
+        {showEditButton && (
+          <TouchableOpacity onPress={handleEditPress}>
+            <Feather name="edit" size={16} color="black" />
+            <Text style={styles.backText}>Editar</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.topContainer}>
@@ -99,103 +129,113 @@ const TaskForm = ({ route, navigation }) => {
 
       <View style={styles.form}>
         <TextInput
-          style={[styles.input, isFixedTask && styles.disabledInput]}
+          style={[
+            styles.input, 
+            !isDescricaoEditable && styles.disabledInput
+          ]}
           placeholder="Descrição da tarefa"
           multiline
           value={taskData.descricao}
-          onChangeText={(text) =>
-            !isFixedTask && setTaskData({ ...taskData, descricao: text })
-          }
-          editable={!isFixedTask}
+          onChangeText={(text) => setTaskData({...taskData, descricao: text})}
+          editable={isDescricaoEditable}
         />
 
         <View style={styles.checkboxContainer}>
           <TouchableOpacity
             style={styles.checkbox}
-            onPress={() => setTaskData({ ...taskData, check: !taskData.check })}
+            onPress={() => {
+              if (isCheckboxEditable) {
+                setTaskData({ ...taskData, check: !taskData.check });
+              }
+            }}
+            disabled={!isCheckboxEditable}
           >
             {taskData.check && <Feather name="check" size={20} color="green" />}
           </TouchableOpacity>
           <Text style={styles.checkboxLabel}>Concluído</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.loginButton}
-          onPress={handleSavePress}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.loginButtonText}>
-              Salvar Tarefa
-            </Text>
-          )}
-        </TouchableOpacity>
+        {showSaveButton && (
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={handleSavePress}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.loginButtonText}>
+                {isSavedTask ? "Atualizar Tarefa" : "Salvar Tarefa"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Modal de confirmação para todas as famílias */}
-      <Modal
-        transparent={true}
-        visible={showConfirmationModal}
-        onRequestClose={() => setShowConfirmationModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Atenção</Text>
-            <Text style={styles.modalText}>
-              Quer marcar esta tarefa como concluída para todos os pacientes?
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setShowConfirmationModal(false);
-                  saveTask(false); // Salva apenas para este paciente
-                }}
-              >
-                <Text style={styles.modalButtonText}>Não, apenas este</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleConfirmForAll}
-              >
-                <Text style={styles.modalButtonText}>Sim, para todos</Text>
-              </TouchableOpacity>
+      {isMedico && (
+        <>
+          <Modal
+            transparent={true}
+            visible={showConfirmationModal}
+            onRequestClose={() => setShowConfirmationModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Atenção</Text>
+                <Text style={styles.modalText}>
+                  Quer marcar esta tarefa como concluída para todos os pacientes?
+                </Text>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowConfirmationModal(false);
+                      saveTask(false);
+                    }}
+                  >
+                    <Text style={styles.modalButtonText}>Não, apenas este</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={handleConfirmForAll}
+                  >
+                    <Text style={styles.modalButtonText}>Sim, para todos</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
-      </Modal>
+          </Modal>
 
-      {/* Modal de confirmação final */}
-      <Modal
-        transparent={true}
-        visible={showFinalConfirmationModal}
-        onRequestClose={() => setShowFinalConfirmationModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Confirmação Final</Text>
-            <Text style={styles.modalText}>
-              Tem certeza que deseja marcar esta tarefa como concluída para TODOS os pacientes?
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowFinalConfirmationModal(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleFinalConfirm}
-              >
-                <Text style={styles.modalButtonText}>Confirmar</Text>
-              </TouchableOpacity>
+          <Modal
+            transparent={true}
+            visible={showFinalConfirmationModal}
+            onRequestClose={() => setShowFinalConfirmationModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Confirmação Final</Text>
+                <Text style={styles.modalText}>
+                  Tem certeza que deseja marcar esta tarefa como concluída para TODOS os pacientes?
+                </Text>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => setShowFinalConfirmationModal(false)}
+                  >
+                    <Text style={styles.modalButtonText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={handleFinalConfirm}
+                  >
+                    <Text style={styles.modalButtonText}>Confirmar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
-      </Modal>
+          </Modal>
+        </>
+      )}
     </View>
   );
 };

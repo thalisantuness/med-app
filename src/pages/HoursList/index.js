@@ -32,7 +32,6 @@ const HoursList = ({ route, navigation }) => {
         let response;
         
         if (user?.role === 'medico') {
-          // Médico vê tarefas do paciente selecionado
           response = await api.get(`/medicos/${user.id}/pacientes/${selectedPatientId}/tarefas`, {
             params: { 
               dia: day,
@@ -43,7 +42,6 @@ const HoursList = ({ route, navigation }) => {
             },
           });
         } else {
-          // Família vê apenas suas próprias tarefas
           response = await api.get(`/pacientes/${user.id}/tarefas`, {
             params: { 
               dia: day,
@@ -55,7 +53,6 @@ const HoursList = ({ route, navigation }) => {
           });
         }
         
-        console.log("Tarefas carregadas:", response.data);
         setSavedTasks(response.data);
       } catch (error) {
         console.error("Erro ao buscar tarefas:", error);
@@ -71,11 +68,8 @@ const HoursList = ({ route, navigation }) => {
   }, [month, day, selectedPatientId, token, user]);
 
   const getTaskDescription = (hour) => {
-    // Verifica se há uma tarefa salva para este horário
     const savedTask = savedTasks.find(task => task.hora === hour);
     if (savedTask) return savedTask.descricao;
-    
-    // Se não houver tarefa salva, verifica se é uma tarefa fixa
     return fixedTasks[hour] || null;
   };
 
@@ -86,6 +80,37 @@ const HoursList = ({ route, navigation }) => {
 
   const hasTask = (hour) => {
     return getTaskDescription(hour) !== null;
+  };
+
+  const handleItemPress = (hour) => {
+    const isFixedTask = fixedTasks[hour] !== undefined;
+    const isSavedTask = savedTasks.some(task => task.hora === hour);
+    const savedTask = savedTasks.find(task => task.hora === hour);
+
+    // Famílias só podem ver tarefas existentes
+    if (user?.role === 'familia' && !isSavedTask) {
+      return;
+    }
+
+    if (isSavedTask) {
+      navigation.navigate("TaskForm", {
+        month,
+        day: parseInt(day),
+        hour,
+        fixedTask: isFixedTask ? fixedTasks[hour] : null,
+        dateString,
+        savedTask,
+        isEditing: false
+      });
+    } else {
+      navigation.navigate("TaskForm", {
+        month,
+        day: parseInt(day),
+        hour,
+        fixedTask: isFixedTask ? fixedTasks[hour] : null,
+        dateString
+      });
+    }
   };
 
   if (loading) {
@@ -118,24 +143,23 @@ const HoursList = ({ route, navigation }) => {
             const isFixedTask = fixedTasks[item] !== undefined;
             const isSavedTask = savedTasks.some(task => task.hora === item);
             const isChecked = getTaskStatus(item);
+            const isFamilia = user?.role === 'familia';
+            const isClickable = !isFamilia || isSavedTask;
 
             return (
               <TouchableOpacity
                 style={[
                   styles.item,
                   hasTask(item) && styles.fixedTaskItem,
+                  !isClickable && styles.disabledItem
                 ]}
-                onPress={() =>
-                  navigation.navigate("TaskForm", {
-                    month,
-                    day: parseInt(day),
-                    hour: item,
-                    fixedTask: isFixedTask ? fixedTasks[item] : null,
-                    dateString,
-                  })
-                }
+                onPress={() => handleItemPress(item)}
+                disabled={!isClickable}
               >
-                <Text style={styles.title}>
+                <Text style={[
+                  styles.title,
+                  !isClickable && styles.disabledText
+                ]}>
                   {item}:00 {description && `- ${description}`}
                 </Text>
                 
@@ -145,6 +169,9 @@ const HoursList = ({ route, navigation }) => {
                   )}
                   {(isSavedTask || isFixedTask) && isChecked && (
                     <Feather name="check-circle" size={16} color="#4CAF50" style={styles.icon} />
+                  )}
+                  {isFamilia && !isSavedTask && (
+                    <Feather name="eye-off" size={16} color="#999" style={styles.icon} />
                   )}
                 </View>
               </TouchableOpacity>
