@@ -64,15 +64,7 @@ const PatientsList = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="white" barStyle="dark-content" />
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Feather name="arrow-left" size={16} color="#385b3e" />
-          <Text style={styles.backText}>Voltar</Text>
-        </TouchableOpacity>
-      </View>
+    
 
       <Text style={styles.pageTitle}>
         {user?.role === 'familia' ? 'Meu Perfil' : 'Selecione o paciente'}
