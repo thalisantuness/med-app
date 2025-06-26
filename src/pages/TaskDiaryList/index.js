@@ -20,7 +20,7 @@ const TaskDiaryList = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar backgroundColor="white" barStyle="dark-content" />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.navigate("PatientsList")}>
           <Feather name="arrow-left" size={16} color="black" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>

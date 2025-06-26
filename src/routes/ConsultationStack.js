@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import ConsultationsList from "../pages/Consultations/index";
+import ConsultationsList from "../pages/ConsultationsList/index";
 import AddConsultation from "../pages/AddConsultation";
 import ConsultationDetails from "../pages/ConsultationDetails"
 

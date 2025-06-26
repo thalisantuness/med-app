@@ -14,28 +14,40 @@ import styles from "./styles";
 import { useContextProvider } from "../../context/AuthContext";
 
 const TaskForm = ({ route, navigation }) => {
-  const { month, day, hour, fixedTask, dateString, savedTask, isEditing: initialEditing = false } = route.params;
+  const {
+    month,
+    day,
+    hour,
+    fixedTask,
+    dateString,
+    savedTask,
+    isEditing: initialEditing = false,
+  } = route.params;
   const { token, selectedPatientId, user } = useContextProvider();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(initialEditing);
-  const [taskData, setTaskData] = useState(savedTask ? {
-    descricao: savedTask.descricao,
-    check: savedTask.check,
-    tarefa_id: savedTask.tarefa_id
-  } : {
-    descricao: fixedTask || "",
-    check: false
-  });
+  const [taskData, setTaskData] = useState(
+    savedTask
+      ? {
+          descricao: savedTask.descricao,
+          check: savedTask.check,
+          tarefa_id: savedTask.tarefa_id,
+        }
+      : {
+          descricao: fixedTask || "",
+          check: false,
+        }
+  );
 
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-  const [showFinalConfirmationModal, setShowFinalConfirmationModal] = useState(false);
+  const [showFinalConfirmationModal, setShowFinalConfirmationModal] =
+    useState(false);
 
   const isFixedTask = !!fixedTask;
   const isSavedTask = !!savedTask;
-  const isMedico = user?.role === 'medico';
-  const isFamilia = user?.role === 'familia';
+  const isMedico = user?.role === "medico";
+  const isFamilia = user?.role === "familia";
 
-  // Se for família e não tiver tarefa salva, volta para lista
   if (isFamilia && !isSavedTask) {
     navigation.goBack();
     return null;
@@ -68,7 +80,14 @@ const TaskForm = ({ route, navigation }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
-      navigation.goBack();
+
+      // Navega de volta com flag de atualização
+      navigation.navigate("HoursList", {
+        month,
+        day,
+        dateString,
+        shouldRefresh: true,
+      });
     } catch (error) {
       console.error("Erro ao salvar tarefa:", error);
       Alert.alert("Erro", "Erro ao salvar tarefa. Tente novamente.");
@@ -77,6 +96,7 @@ const TaskForm = ({ route, navigation }) => {
     }
   };
 
+  // ... restante do código permanece igual ...
   const handleEditPress = () => {
     setIsEditing(true);
   };
@@ -99,9 +119,9 @@ const TaskForm = ({ route, navigation }) => {
     saveTask(true);
   };
 
-  // Determina se os campos devem estar editáveis
-  const isDescricaoEditable = isMedico && (isEditing || !isSavedTask) && !isFixedTask;
-  const isCheckboxEditable = isMedico && (isEditing || !isSavedTask); // Checkbox editável em edição OU para novas tarefas
+  const isDescricaoEditable =
+    isMedico && (isEditing || !isSavedTask) && !isFixedTask;
+  const isCheckboxEditable = isMedico && (isEditing || !isSavedTask);
   const showSaveButton = isMedico && (isEditing || !isSavedTask);
   const showEditButton = isMedico && isSavedTask && !isEditing;
 
@@ -112,7 +132,7 @@ const TaskForm = ({ route, navigation }) => {
           <Feather name="arrow-left" size={16} color="black" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
-        
+
         {showEditButton && (
           <TouchableOpacity onPress={handleEditPress}>
             <Feather name="edit" size={16} color="black" />
@@ -129,14 +149,11 @@ const TaskForm = ({ route, navigation }) => {
 
       <View style={styles.form}>
         <TextInput
-          style={[
-            styles.input, 
-            !isDescricaoEditable && styles.disabledInput
-          ]}
+          style={[styles.input, !isDescricaoEditable && styles.disabledInput]}
           placeholder="Descrição da tarefa"
           multiline
           value={taskData.descricao}
-          onChangeText={(text) => setTaskData({...taskData, descricao: text})}
+          onChangeText={(text) => setTaskData({ ...taskData, descricao: text })}
           editable={isDescricaoEditable}
         />
 
@@ -183,7 +200,8 @@ const TaskForm = ({ route, navigation }) => {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Atenção</Text>
                 <Text style={styles.modalText}>
-                  Quer marcar esta tarefa como concluída para todos os pacientes?
+                  Quer marcar esta tarefa como concluída para todos os
+                  pacientes?
                 </Text>
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
@@ -215,7 +233,8 @@ const TaskForm = ({ route, navigation }) => {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Confirmação Final</Text>
                 <Text style={styles.modalText}>
-                  Tem certeza que deseja marcar esta tarefa como concluída para TODOS os pacientes?
+                  Tem certeza que deseja marcar esta tarefa como concluída para
+                  TODOS os pacientes?
                 </Text>
                 <View style={styles.modalButtons}>
                   <TouchableOpacity

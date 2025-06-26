@@ -26,47 +26,63 @@ const HoursList = ({ route, navigation }) => {
     19: "Janta",
   };
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        let response;
-        
-        if (user?.role === 'medico') {
-          response = await api.get(`/medicos/${user.id}/pacientes/${selectedPatientId}/tarefas`, {
-            params: { 
-              dia: day,
-              mes_ano: month
-            },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-        } else {
-          response = await api.get(`/pacientes/${user.id}/tarefas`, {
-            params: { 
-              dia: day,
-              mes_ano: month
-            },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-        }
-        
-        setSavedTasks(response.data);
-      } catch (error) {
-        console.error("Erro ao buscar tarefas:", error);
-        if (error.response?.status === 401) {
-          navigation.navigate('Login');
-        }
-      } finally {
-        setLoading(false);
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      let response;
+      
+      if (user?.role === 'medico') {
+        response = await api.get(`/medicos/${user.id}/pacientes/${selectedPatientId}/tarefas`, {
+          params: { 
+            dia: day,
+            mes_ano: month
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } else {
+        response = await api.get(`/pacientes/${user.id}/tarefas`, {
+          params: { 
+            dia: day,
+            mes_ano: month
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
       }
-    };
+      
+      setSavedTasks(response.data);
+    } catch (error) {
+      console.error("Erro ao buscar tarefas:", error);
+      if (error.response?.status === 401) {
+        navigation.navigate('Login');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    // Listener para quando a tela receber foco
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchTasks();
+    });
+
+    // Verifica se veio da TaskForm com flag de atualização
+    if (route.params?.shouldRefresh) {
+      fetchTasks();
+      navigation.setParams({ shouldRefresh: false });
+    }
+
+    // Carrega os dados inicialmente
     fetchTasks();
-  }, [month, day, selectedPatientId, token, user]);
 
+    return unsubscribe;
+  }, [navigation, route.params?.shouldRefresh, month, day, selectedPatientId, token, user]);
+
+  // ... restante do código permanece igual ...
   const getTaskDescription = (hour) => {
     const savedTask = savedTasks.find(task => task.hora === hour);
     if (savedTask) return savedTask.descricao;
@@ -87,7 +103,6 @@ const HoursList = ({ route, navigation }) => {
     const isSavedTask = savedTasks.some(task => task.hora === hour);
     const savedTask = savedTasks.find(task => task.hora === hour);
 
-    // Famílias só podem ver tarefas existentes
     if (user?.role === 'familia' && !isSavedTask) {
       return;
     }
@@ -124,7 +139,7 @@ const HoursList = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.navigate("TaskDiaryList")}>
           <Feather name="arrow-left" size={16} color="black" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>

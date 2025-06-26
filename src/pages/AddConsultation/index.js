@@ -128,7 +128,7 @@ const AddConsultation = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.navigate("ConsultationsList")}>
           <Feather name="arrow-left" size={16} color="black" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
