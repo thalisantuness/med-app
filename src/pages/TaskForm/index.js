@@ -18,14 +18,12 @@ const TaskForm = ({ route, navigation }) => {
     month,
     day,
     hour,
-    fixedTask,
     dateString,
     savedTask,
-    isEditing: initialEditing = false,
   } = route.params;
   const { token, selectedPatientId, user } = useContextProvider();
   const [loading, setLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(initialEditing);
+
   const [taskData, setTaskData] = useState(
     savedTask
       ? {
@@ -34,16 +32,15 @@ const TaskForm = ({ route, navigation }) => {
           tarefa_id: savedTask.tarefa_id,
         }
       : {
-          descricao: fixedTask || "",
+          descricao: "",
           check: false,
         }
   );
 
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-  const [showFinalConfirmationModal, setShowFinalConfirmationModal] =
-    useState(false);
+  const [showFinalConfirmationModal, setShowFinalConfirmationModal] = useState(false);
+  const [showCreateForAllModal, setShowCreateForAllModal] = useState(false);
 
-  const isFixedTask = !!fixedTask;
   const isSavedTask = !!savedTask;
   const isMedico = user?.role === "medico";
   const isFamilia = user?.role === "familia";
@@ -53,60 +50,100 @@ const TaskForm = ({ route, navigation }) => {
     return null;
   }
 
-  const saveTask = async (forAllFamilies = false) => {
-    const payload = {
-      mes_ano: month,
-      dia: day,
-      hora: hour,
-      check: taskData.check,
-      descricao: taskData.descricao,
-      paciente_id: forAllFamilies ? null : selectedPatientId,
-      medico_id: user.id,
-    };
+  const updateAllTasks = async () => {
+    try {
+      // 1. Busca todas as tarefas que correspondem aos critérios para saber seus IDs
+      const allTasksResponse = await api.get(`/medicos/${user.id}/tarefas`, {
+        params: { mes_ano: month, dia: day, hora: hour },
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
+      // Filtra para garantir que estamos atualizando apenas a tarefa com a mesma descrição original
+      const tasksToUpdate = allTasksResponse.data.filter(
+        (task) => task.descricao === savedTask.descricao
+      );
+
+      if (tasksToUpdate.length === 0) {
+        throw new Error("Nenhuma tarefa correspondente encontrada para atualizar.");
+      }
+
+      // 2. Cria um array de promessas para atualizar cada tarefa individualmente
+      const updatePromises = tasksToUpdate.map((task) => {
+        const updatePayload = { ...task, check: taskData.check }; // Atualiza apenas o 'check'
+        return api.put(`/tarefas/${task.tarefa_id}`, updatePayload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      });
+
+      // 3. Executa todas as atualizações
+      await Promise.all(updatePromises);
+
+    } catch (error) {
+      console.error("Erro ao atualizar todas as tarefas:", error);
+      throw error; // Propaga o erro para ser tratado no 'saveTask'
+    }
+  };
+
+  const saveTask = async (forAllFamilies = false) => {
     setLoading(true);
     try {
-      if (isSavedTask && isEditing) {
-        await api.put(`/tarefas/${taskData.tarefa_id}`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setIsEditing(false);
-      } else if (forAllFamilies) {
-        await api.post("tarefas/todas-familias", payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      if (forAllFamilies) {
+        if (isSavedTask) {
+          // Se a tarefa já existe, atualiza para todos
+          await updateAllTasks();
+        } else {
+          // Se é uma tarefa nova, cria para todos
+          const payload = {
+            mes_ano: month, dia: day, hora: hour, check: taskData.check,
+            descricao: taskData.descricao, medico_id: user.id, paciente_id: null,
+          };
+          await api.post("/tarefas/todas-familias", payload, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        }
       } else {
-        await api.post("tarefas", payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Lógica para paciente único
+        const payload = {
+          mes_ano: month, dia: day, hora: hour, check: taskData.check,
+          descricao: taskData.descricao, medico_id: user.id, paciente_id: selectedPatientId,
+        };
+        if (isSavedTask) {
+          await api.put(`/tarefas/${taskData.tarefa_id}`, payload, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        } else {
+          await api.post("/tarefas", payload, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        }
       }
 
       // Navega de volta com flag de atualização
       navigation.navigate("HoursList", {
-        month,
-        day,
-        dateString,
-        shouldRefresh: true,
+        month, day, dateString, shouldRefresh: true,
       });
     } catch (error) {
-      console.error("Erro ao salvar tarefa:", error);
+      console.error("Erro ao salvar tarefa:", error.response?.data || error);
       Alert.alert("Erro", "Erro ao salvar tarefa. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ... restante do código permanece igual ...
-  const handleEditPress = () => {
-    setIsEditing(true);
-  };
-
   const handleSavePress = () => {
-    if (isFixedTask && taskData.check && isMedico) {
-      setShowConfirmationModal(true);
-    } else {
-      saveTask();
+    const wasJustChecked = taskData.check && (!savedTask || !savedTask.check);
+
+    if (isMedico && !isSavedTask) {
+      setShowCreateForAllModal(true); // Pergunta se quer criar para todos
+      return;
     }
+
+    if (isMedico && wasJustChecked) {
+      setShowConfirmationModal(true); // Pergunta se quer concluir para todos
+      return;
+    }
+
+    saveTask(false); // Salva para um único paciente em qualquer outro caso
   };
 
   const handleConfirmForAll = () => {
@@ -119,11 +156,9 @@ const TaskForm = ({ route, navigation }) => {
     saveTask(true);
   };
 
-  const isDescricaoEditable =
-    isMedico && (isEditing || !isSavedTask) && !isFixedTask;
-  const isCheckboxEditable = isMedico && (isEditing || !isSavedTask);
-  const showSaveButton = isMedico && (isEditing || !isSavedTask);
-  const showEditButton = isMedico && isSavedTask && !isEditing;
+  const isDescricaoEditable = isMedico;
+  const isCheckboxEditable = isMedico;
+  const showSaveButton = isMedico;
 
   return (
     <View style={styles.container}>
@@ -132,13 +167,6 @@ const TaskForm = ({ route, navigation }) => {
           <Feather name="arrow-left" size={16} color="black" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
-
-        {showEditButton && (
-          <TouchableOpacity onPress={handleEditPress}>
-            <Feather name="edit" size={16} color="black" />
-            <Text style={styles.backText}>Editar</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <View style={styles.topContainer}>
@@ -153,7 +181,9 @@ const TaskForm = ({ route, navigation }) => {
           placeholder="Descrição da tarefa"
           multiline
           value={taskData.descricao}
-          onChangeText={(text) => setTaskData({ ...taskData, descricao: text })}
+          onChangeText={(text) =>
+            setTaskData({ ...taskData, descricao: text })
+          }
           editable={isDescricaoEditable}
         />
 
@@ -193,6 +223,42 @@ const TaskForm = ({ route, navigation }) => {
         <>
           <Modal
             transparent={true}
+            visible={showCreateForAllModal}
+            onRequestClose={() => setShowCreateForAllModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Salvar Tarefa</Text>
+                <Text style={styles.modalText}>
+                  Deseja salvar esta tarefa para todos os pacientes ou apenas
+                  para o paciente atual?
+                </Text>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowCreateForAllModal(false);
+                      saveTask(false);
+                    }}
+                  >
+                    <Text style={styles.modalButtonText}>Apenas este</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={() => {
+                      setShowCreateForAllModal(false);
+                      setShowFinalConfirmationModal(true);
+                    }}
+                  >
+                    <Text style={styles.modalButtonText}>Para todos</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+          <Modal
+            transparent={true}
             visible={showConfirmationModal}
             onRequestClose={() => setShowConfirmationModal(false)}
           >
@@ -211,7 +277,9 @@ const TaskForm = ({ route, navigation }) => {
                       saveTask(false);
                     }}
                   >
-                    <Text style={styles.modalButtonText}>Não, apenas este</Text>
+                    <Text style={styles.modalButtonText}>
+                      Não, apenas este
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.confirmButton]}
@@ -233,8 +301,8 @@ const TaskForm = ({ route, navigation }) => {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Confirmação Final</Text>
                 <Text style={styles.modalText}>
-                  Tem certeza que deseja marcar esta tarefa como concluída para
-                  TODOS os pacientes?
+                  Tem certeza que deseja aplicar esta ação para TODOS os
+                  pacientes?
                 </Text>
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
@@ -260,3 +328,4 @@ const TaskForm = ({ route, navigation }) => {
 };
 
 export default TaskForm;
+

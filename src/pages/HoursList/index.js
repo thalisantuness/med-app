@@ -11,7 +11,7 @@ const HoursList = ({ route, navigation }) => {
   const { token, selectedPatientId, user } = useContextProvider();
   const [loading, setLoading] = useState(true);
   const [savedTasks, setSavedTasks] = useState([]);
-  
+
   // Horários das 7h às 20h
   const [hours] = useState(Array.from({ length: 14 }, (_, i) => i + 7));
 
@@ -30,10 +30,10 @@ const HoursList = ({ route, navigation }) => {
     try {
       setLoading(true);
       let response;
-      
+
       if (user?.role === 'medico') {
         response = await api.get(`/medicos/${user.id}/pacientes/${selectedPatientId}/tarefas`, {
-          params: { 
+          params: {
             dia: day,
             mes_ano: month
           },
@@ -43,7 +43,7 @@ const HoursList = ({ route, navigation }) => {
         });
       } else {
         response = await api.get(`/pacientes/${user.id}/tarefas`, {
-          params: { 
+          params: {
             dia: day,
             mes_ano: month
           },
@@ -52,7 +52,7 @@ const HoursList = ({ route, navigation }) => {
           },
         });
       }
-      
+
       setSavedTasks(response.data);
     } catch (error) {
       console.error("Erro ao buscar tarefas:", error);
@@ -82,11 +82,9 @@ const HoursList = ({ route, navigation }) => {
     return unsubscribe;
   }, [navigation, route.params?.shouldRefresh, month, day, selectedPatientId, token, user]);
 
-  // ... restante do código permanece igual ...
   const getTaskDescription = (hour) => {
     const savedTask = savedTasks.find(task => task.hora === hour);
-    if (savedTask) return savedTask.descricao;
-    return fixedTasks[hour] || null;
+    return savedTask ? savedTask.descricao : null;
   };
 
   const getTaskStatus = (hour) => {
@@ -99,33 +97,21 @@ const HoursList = ({ route, navigation }) => {
   };
 
   const handleItemPress = (hour) => {
-    const isFixedTask = fixedTasks[hour] !== undefined;
-    const isSavedTask = savedTasks.some(task => task.hora === hour);
     const savedTask = savedTasks.find(task => task.hora === hour);
+    const isSavedTask = !!savedTask;
 
     if (user?.role === 'familia' && !isSavedTask) {
       return;
     }
 
-    if (isSavedTask) {
-      navigation.navigate("TaskForm", {
-        month,
-        day: parseInt(day),
-        hour,
-        fixedTask: isFixedTask ? fixedTasks[hour] : null,
-        dateString,
-        savedTask,
-        isEditing: false
-      });
-    } else {
-      navigation.navigate("TaskForm", {
-        month,
-        day: parseInt(day),
-        hour,
-        fixedTask: isFixedTask ? fixedTasks[hour] : null,
-        dateString
-      });
-    }
+    navigation.navigate("TaskForm", {
+      month,
+      day: parseInt(day),
+      hour,
+      dateString,
+      savedTask, 
+      isEditing: !isSavedTask, 
+    });
   };
 
   if (loading) {
@@ -155,7 +141,6 @@ const HoursList = ({ route, navigation }) => {
           keyExtractor={(item) => String(item)}
           renderItem={({ item }) => {
             const description = getTaskDescription(item);
-            const isFixedTask = fixedTasks[item] !== undefined;
             const isSavedTask = savedTasks.some(task => task.hora === item);
             const isChecked = getTaskStatus(item);
             const isFamilia = user?.role === 'familia';
@@ -177,12 +162,9 @@ const HoursList = ({ route, navigation }) => {
                 ]}>
                   {item}:00 {description && `- ${description}`}
                 </Text>
-                
+
                 <View style={styles.iconsContainer}>
-                  {isFixedTask && (
-                    <Feather name="lock" size={16} color="#385b3e" style={styles.icon} />
-                  )}
-                  {(isSavedTask || isFixedTask) && isChecked && (
+                  {isSavedTask && isChecked && (
                     <Feather name="check-circle" size={16} color="#4CAF50" style={styles.icon} />
                   )}
                   {isFamilia && !isSavedTask && (
