@@ -64,10 +64,9 @@ const PatientsList = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="white" barStyle="dark-content" />
-    
-
+      
       <Text style={styles.pageTitle}>
-        {user?.role === 'familia' ? 'Meu Perfil' : 'Selecione o paciente'}
+        {user?.role === 'familia' ? 'Diário' : 'Selecione o paciente'}
       </Text>
 
       <View style={styles.content}>
@@ -84,12 +83,15 @@ const PatientsList = ({ navigation }) => {
               >
                 <View style={styles.itemContent}>
                   <Feather
-                    name="user"
+                    // Lógica do ícone ajustada
+                    name={user?.role === 'familia' ? 'calendar' : 'user'}
                     size={20}
                     color="#385b3e"
                     style={styles.userIcon}
                   />
-                  <Text style={styles.patientName}>{item.nome}</Text>
+                  <Text style={styles.patientName}>
+                    {user?.role === 'familia' ? 'Calendário de atividades' : item.nome}
+                  </Text>
                 </View>
                 {user?.role === 'medico' && (
                   <Feather name="chevron-right" size={20} color="#385b3e" />

@@ -10,17 +10,29 @@ export default StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between', 
     marginBottom: 32,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
+    // Remove padding para controle mais fino
   },
   backText: {
     marginLeft: 8,
     fontSize: 16,
     color: '#385b3e',
+    fontWeight: '500',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8, 
+  },
+  deleteButtonText: {
+    marginLeft: 4,
+    color: 'red',
+    fontSize: 16,
     fontWeight: '500',
   },
   title: {
@@ -102,46 +114,46 @@ export default StyleSheet.create({
     elevation: 1,
   },
   modalOverlay: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-},
-modalContent: {
-  backgroundColor: 'white',
-  borderRadius: 10,
-  padding: 20,
-  width: '80%',
-},
-modalTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  marginBottom: 15,
-  color: '#385b3e',
-},
-modalText: {
-  fontSize: 16,
-  marginBottom: 20,
-},
-modalButtons: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-},
-modalButton: {
-  padding: 10,
-  borderRadius: 5,
-  minWidth: '48%',
-  alignItems: 'center',
-},
-cancelButton: {
-  backgroundColor: '#e0e0e0',
-},
-confirmButton: {
-  backgroundColor: '#385b3e',
-},
-modalButtonText: {
-  color: 'white',
-  fontWeight: 'bold',
-},
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    width: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#385b3e',
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    padding: 10,
+    borderRadius: 5,
+    minWidth: '48%',
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#e0e0e0',
+  },
+  confirmButton: {
+    backgroundColor: '#385b3e',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
   // ... outros estilos que você já tinha
 });

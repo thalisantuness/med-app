@@ -40,6 +40,8 @@ const TaskForm = ({ route, navigation }) => {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showFinalConfirmationModal, setShowFinalConfirmationModal] = useState(false);
   const [showCreateForAllModal, setShowCreateForAllModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showFinalDeleteModal, setShowFinalDeleteModal] = useState(false);
 
   const isSavedTask = !!savedTask;
   const isMedico = user?.role === "medico";
@@ -62,14 +64,9 @@ const TaskForm = ({ route, navigation }) => {
       const tasksToUpdate = allTasksResponse.data.filter(
         (task) => task.descricao === savedTask.descricao
       );
-
-      if (tasksToUpdate.length === 0) {
-        throw new Error("Nenhuma tarefa correspondente encontrada para atualizar.");
-      }
-
-      // 2. Cria um array de promessas para atualizar cada tarefa individualmente
+      if (tasksToUpdate.length === 0) throw new Error("Nenhuma tarefa correspondente encontrada para atualizar.");
       const updatePromises = tasksToUpdate.map((task) => {
-        const updatePayload = { ...task, check: taskData.check }; // Atualiza apenas o 'check'
+        const updatePayload = { ...task, check: taskData.check };
         return api.put(`/tarefas/${task.tarefa_id}`, updatePayload, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -80,9 +77,32 @@ const TaskForm = ({ route, navigation }) => {
 
     } catch (error) {
       console.error("Erro ao atualizar todas as tarefas:", error);
-      throw error; // Propaga o erro para ser tratado no 'saveTask'
+      throw error;
     }
   };
+
+  const deleteAllTasks = async () => {
+    try {
+        const allTasksResponse = await api.get(`/medicos/${user.id}/tarefas`, {
+            params: { mes_ano: month, dia: day, hora: hour },
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const tasksToDelete = allTasksResponse.data.filter(
+            (task) => task.descricao === savedTask.descricao
+        );
+        if (tasksToDelete.length === 0) throw new Error("Nenhuma tarefa correspondente encontrada para excluir.");
+        const deletePromises = tasksToDelete.map((task) =>
+            api.delete(`/tarefas/${task.tarefa_id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+        );
+        await Promise.all(deletePromises);
+    } catch (error) {
+        console.error("Erro ao excluir todas as tarefas:", error);
+        throw error;
+    }
+  };
+
 
   const saveTask = async (forAllFamilies = false) => {
     setLoading(true);
@@ -130,20 +150,43 @@ const TaskForm = ({ route, navigation }) => {
     }
   };
 
+  const handleDelete = async (forAll = false) => {
+    setLoading(true);
+    setShowDeleteModal(false);
+    setShowFinalDeleteModal(false);
+    try {
+        if (forAll) {
+            await deleteAllTasks();
+        } else {
+            await api.delete(`/tarefas/${taskData.tarefa_id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+        }
+        Alert.alert("Sucesso", "Tarefa excluída com sucesso.");
+        navigation.navigate("HoursList", {
+            month, day, dateString, shouldRefresh: true,
+        });
+    } catch (error) {
+        console.error("Erro ao excluir tarefa:", error.response?.data || error);
+        Alert.alert("Erro", "Erro ao excluir a tarefa. Tente novamente.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
   const handleSavePress = () => {
     const wasJustChecked = taskData.check && (!savedTask || !savedTask.check);
 
     if (isMedico && !isSavedTask) {
-      setShowCreateForAllModal(true); // Pergunta se quer criar para todos
+      setShowCreateForAllModal(true);
       return;
     }
 
     if (isMedico && wasJustChecked) {
-      setShowConfirmationModal(true); // Pergunta se quer concluir para todos
+      setShowConfirmationModal(true);
       return;
     }
-
-    saveTask(false); // Salva para um único paciente em qualquer outro caso
+    saveTask(false);
   };
 
   const handleConfirmForAll = () => {
@@ -167,6 +210,13 @@ const TaskForm = ({ route, navigation }) => {
           <Feather name="arrow-left" size={16} color="black" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
+        
+        {isMedico && isSavedTask && (
+            <TouchableOpacity onPress={() => setShowDeleteModal(true)} style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Feather name="trash-2" size={16} color="red" />
+                <Text style={[styles.backText, {color: 'red', marginLeft: 4}]}>Excluir</Text>
+            </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.topContainer}>
@@ -221,6 +271,7 @@ const TaskForm = ({ route, navigation }) => {
 
       {isMedico && (
         <>
+          {/* Modais de Salvar/Atualizar */}
           <Modal
             transparent={true}
             visible={showCreateForAllModal}
@@ -321,6 +372,68 @@ const TaskForm = ({ route, navigation }) => {
               </View>
             </View>
           </Modal>
+
+          {/* Modais de Excluir */}
+          <Modal
+            transparent={true}
+            visible={showDeleteModal}
+            onRequestClose={() => setShowDeleteModal(false)}
+            >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Excluir Tarefa</Text>
+                <Text style={styles.modalText}>
+                    Deseja excluir esta tarefa para apenas este paciente ou para todos?
+                </Text>
+                <View style={styles.modalButtons}>
+                    <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => handleDelete(false)}
+                    >
+                    <Text style={styles.modalButtonText}>Apenas este</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={() => {
+                        setShowDeleteModal(false);
+                        setShowFinalDeleteModal(true);
+                    }}
+                    >
+                    <Text style={styles.modalButtonText}>Para todos</Text>
+                    </TouchableOpacity>
+                </View>
+                </View>
+            </View>
+            </Modal>
+
+            <Modal
+            transparent={true}
+            visible={showFinalDeleteModal}
+            onRequestClose={() => setShowFinalDeleteModal(false)}
+            >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Confirmação Final</Text>
+                <Text style={styles.modalText}>
+                    Tem certeza que deseja EXCLUIR esta tarefa para TODOS os pacientes? Esta ação não pode ser desfeita.
+                </Text>
+                <View style={styles.modalButtons}>
+                    <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => setShowFinalDeleteModal(false)}
+                    >
+                    <Text style={styles.modalButtonText}>Cancelar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton, {backgroundColor: 'red'}]}
+                    onPress={() => handleDelete(true)}
+                    >
+                    <Text style={styles.modalButtonText}>Excluir Todos</Text>
+                    </TouchableOpacity>
+                </View>
+                </View>
+            </View>
+            </Modal>
         </>
       )}
     </View>
