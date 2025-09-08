@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Platform,
+  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
@@ -28,17 +29,17 @@ const AddConsultation = ({ navigation }) => {
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
 
-  const { token, user } = useContextProvider(); // Alterado para pegar o user completo
+  const { token, user } = useContextProvider();
 
-  // Ajusta o horário inicial para o próximo intervalo de 30 minutos
   useEffect(() => {
     const now = new Date();
     const minutes = now.getMinutes();
-    const adjustedMinutes = minutes < 30 ? 30 : 60;
+    const adjustedMinutes = minutes < 30 ? 30 : 0;
     now.setMinutes(adjustedMinutes);
     now.setSeconds(0);
-    if (adjustedMinutes === 60) now.setHours(now.getHours() + 1);
+    if (minutes >= 30) now.setHours(now.getHours() + 1);
     setDate(now);
+    setFormData(prev => ({...prev, data_agendada: formatDateToAPI(now)}));
   }, []);
 
   const fetchPatients = async () => {
@@ -52,14 +53,16 @@ const AddConsultation = ({ navigation }) => {
       setPatients(response.data);
     } catch (error) {
       console.error("Error fetching patients:", error);
-      alert("Erro ao carregar pacientes. Tente novamente mais tarde.");
+      Alert.alert("Erro", "Erro ao carregar pacientes. Tente novamente mais tarde.");
     } finally {
       setLoadingPatients(false);
     }
   };
 
   useEffect(() => {
-    fetchPatients();
+    if (token) {
+      fetchPatients();
+    }
   }, [token]);
 
   const formatDateToAPI = (date) => {
@@ -76,20 +79,14 @@ const AddConsultation = ({ navigation }) => {
     setShowPicker(Platform.OS === 'ios');
     
     if (selectedDate) {
-      // Ajusta os minutos para o intervalo de 30 minutos mais próximo
       const minutes = selectedDate.getMinutes();
-      selectedDate.setMinutes(minutes < 30 ? 30 : 0);
-      selectedDate.setSeconds(0);
-      
-      // Limita o horário entre 7h e 20h
-      const hours = selectedDate.getHours();
-      if (hours < 7) {
-        selectedDate.setHours(7);
-        selectedDate.setMinutes(0);
-      } else if (hours >= 20) {
-        selectedDate.setHours(19);
+      if (minutes > 0 && minutes < 30) {
         selectedDate.setMinutes(30);
+      } else if (minutes > 30) {
+        selectedDate.setMinutes(0);
+        selectedDate.setHours(selectedDate.getHours() + 1);
       }
+      selectedDate.setSeconds(0);
       
       setDate(selectedDate);
       setFormData({...formData, data_agendada: formatDateToAPI(selectedDate)});
@@ -104,11 +101,11 @@ const AddConsultation = ({ navigation }) => {
     setLoading(true);
     try {
       const payload = {
-        medico_id: user.id, // Usando o ID do médico logado
+        medico_id: user.id,
         familia_id: formData.familia_id,
         data_agendada: formData.data_agendada,
         descricao: formData.descricao,
-        status: "agendada" // Adicionando status explicitamente
+        status: "agendada"
       };
 
       await api.post("/consultas", payload, {
@@ -119,7 +116,7 @@ const AddConsultation = ({ navigation }) => {
       navigation.goBack();
     } catch (error) {
       console.error("Error saving consultation:", error);
-      alert("Erro ao agendar consulta. Verifique os dados e tente novamente.");
+      Alert.alert("Erro", "Erro ao agendar consulta. Verifique os dados e tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -128,8 +125,8 @@ const AddConsultation = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate("ConsultationsList")}>
-          <Feather name="arrow-left" size={16} color="black" />
+        <TouchableOpacity onPress={() => navigation.navigate("ConsultationsList")} style={styles.backButton}>
+          <Feather name="arrow-left" size={16} color="#385b3e" />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
       </View>
