@@ -6,6 +6,7 @@ import {
   StatusBar,
   FlatList,
   ActivityIndicator,
+  Linking
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import api from "../../services/api";
@@ -16,6 +17,17 @@ const PatientsList = ({ navigation }) => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const { token, setSelectedPatientId, user } = useContextProvider();
+
+  // Links das redes sociais
+  const socialLinks = {
+    instagram: "https://www.instagram.com/suaconta",
+    facebook: "https://www.facebook.com/suapagina",
+    whatsapp: "https://wa.me/5511999999999"
+  };
+
+  const openSocialMedia = (url) => {
+    Linking.openURL(url).catch(err => console.error('Erro ao abrir link:', err));
+  };
 
   const fetchPatients = async () => {
     try {
@@ -73,32 +85,69 @@ const PatientsList = ({ navigation }) => {
         {loading ? (
           <ActivityIndicator size="large" color="#385b3e" />
         ) : (
-          <FlatList
-            data={patients}
-            keyExtractor={(item) => String(item.usuario_id)}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.item}
-                onPress={() => handlePatientSelect(item.usuario_id)}
-              >
-                <View style={styles.itemContent}>
-                  <Feather
-                    // Lógica do ícone ajustada
-                    name={user?.role === 'familia' ? 'calendar' : 'user'}
-                    size={20}
-                    color="#385b3e"
-                    style={styles.userIcon}
-                  />
-                  <Text style={styles.patientName}>
-                    {user?.role === 'familia' ? 'Calendário de atividades' : item.nome}
-                  </Text>
+          <>
+            <FlatList
+              data={patients}
+              keyExtractor={(item) => String(item.usuario_id)}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.item}
+                  onPress={() => handlePatientSelect(item.usuario_id)}
+                >
+                  <View style={styles.itemContent}>
+                    <Feather
+                      name={user?.role === 'familia' ? 'calendar' : 'user'}
+                      size={20}
+                      color="#385b3e"
+                      style={styles.userIcon}
+                    />
+                    <Text style={styles.patientName}>
+                      {user?.role === 'familia' ? 'Calendário de atividades' : item.nome}
+                    </Text>
+                  </View>
+                  {user?.role === 'medico' && (
+                    <Feather name="chevron-right" size={20} color="#385b3e" />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+
+            {/* Seção de redes sociais apenas para familia */}
+            {user?.role === 'familia' && (
+              <View style={styles.socialSection}>
+                <Text style={styles.socialTitle}>Acompanhe-nos nas redes sociais</Text>
+                
+                <View style={styles.socialButtonsContainer}>
+                  {/* Botão Instagram */}
+                  <TouchableOpacity 
+                    style={[styles.socialButton, styles.instagramButton]}
+                    onPress={() => openSocialMedia(socialLinks.instagram)}
+                  >
+                    <Feather name="instagram" size={24} color="white" />
+                    <Text style={styles.socialButtonText}>Instagram</Text>
+                  </TouchableOpacity>
+
+                  {/* Botão Facebook */}
+                  <TouchableOpacity 
+                    style={[styles.socialButton, styles.facebookButton]}
+                    onPress={() => openSocialMedia(socialLinks.facebook)}
+                  >
+                    <Feather name="facebook" size={24} color="white" />
+                    <Text style={styles.socialButtonText}>Facebook</Text>
+                  </TouchableOpacity>
+
+                  {/* Botão WhatsApp */}
+                  <TouchableOpacity 
+                    style={[styles.socialButton, styles.whatsappButton]}
+                    onPress={() => openSocialMedia(socialLinks.whatsapp)}
+                  >
+                    <Feather name="message-circle" size={24} color="white" />
+                    <Text style={styles.socialButtonText}>WhatsApp</Text>
+                  </TouchableOpacity>
                 </View>
-                {user?.role === 'medico' && (
-                  <Feather name="chevron-right" size={20} color="#385b3e" />
-                )}
-              </TouchableOpacity>
+              </View>
             )}
-          />
+          </>
         )}
       </View>
     </View>

@@ -67,4 +67,49 @@ export default StyleSheet.create({
     padding: 8,
     marginBottom: 16,
   },
+
+  // Adicione estas propriedades ao seu objeto de estilos
+  socialSection: {
+    marginTop: 30,
+    padding: 20,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  socialTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 15,
+    color: "#385b3e",
+  },
+  socialButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    flexWrap: "wrap",
+  },
+  socialButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 8,
+    margin: 5,
+    minWidth: 120,
+    justifyContent: "center",
+  },
+  instagramButton: {
+    backgroundColor: "#E1306C",
+  },
+  facebookButton: {
+    backgroundColor: "#3b5998",
+  },
+  whatsappButton: {
+    backgroundColor: "#25D366",
+  },
+  socialButtonText: {
+    color: "white",
+    marginLeft: 8,
+    fontWeight: "600",
+  },
 });
