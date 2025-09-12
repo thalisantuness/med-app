@@ -12,8 +12,8 @@ const HoursList = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [savedTasks, setSavedTasks] = useState([]);
 
-  // Horários das 7h às 20h
-  const [hours] = useState(Array.from({ length: 14 }, (_, i) => i + 7));
+  // Horários das 7h às 22h (16 horas no total)
+const [hours] = useState(Array.from({ length: 17 }, (_, i) => i + 7));
 
   // Tarefas fixas pré-definidas
   const fixedTasks = {

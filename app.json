@@ -19,19 +19,21 @@
       "supportsTablet": true
     },
     "android": {
-       "package": "com.thalisantunes.clinica-cleuza-canan",
-       "versionCode": 1,
-       "permissions": [],
+      "package": "com.thalisantunes.clinica-cleuza-canan",
+      "versionCode": 1,
+      "permissions": [],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
-     
     },
     "extra": {
       "eas": {
         "projectId": "ccaee051-5503-4bd6-845c-ca43fcf51325"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
