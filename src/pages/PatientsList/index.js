@@ -18,36 +18,33 @@ const PatientsList = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const { token, setSelectedPatientId, user } = useContextProvider();
 
-  // Links das redes sociais
   const socialLinks = {
-    instagram: "https://www.instagram.com/suaconta",
-    facebook: "https://www.facebook.com/suapagina",
-    whatsapp: "https://wa.me/5511999999999"
+    site: "https://clinicacleuzacanan.com.br/",
+    instagram: "https://www.instagram.com/clinicacleuzacanan",
+    youtube: "https://www.youtube.com/@clinicacleuzacanan",
+    whatsapp: "https://wa.link/mfkdqi"
   };
 
-  const openSocialMedia = (url) => {
+  const openURL = (url) => {
     Linking.openURL(url).catch(err => console.error('Erro ao abrir link:', err));
   };
 
   const fetchPatients = async () => {
+    setLoading(true);
     try {
       let response;
       
       if (user?.role === 'familia') {
         // Se for família, busca apenas os próprios dados
         response = await api.get(`usuarios/${user.id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         // Transforma o único usuário em um array para manter a mesma estrutura
         setPatients([response.data]);
       } else {
         // Se for médico, busca todos os pacientes
         response = await api.get("usuarios/pacientes", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         setPatients(response.data);
       }
@@ -68,15 +65,22 @@ const PatientsList = ({ navigation }) => {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      fetchPatients();
+      if (token) {
+        fetchPatients();
+      }
     });
+
+    if (token) {
+      fetchPatients();
+    }
+
     return unsubscribe;
   }, [navigation, token, user]);
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="white" barStyle="dark-content" />
-      
+
       <Text style={styles.pageTitle}>
         {user?.role === 'familia' ? 'Diário' : 'Selecione o paciente'}
       </Text>
@@ -115,34 +119,44 @@ const PatientsList = ({ navigation }) => {
             {/* Seção de redes sociais apenas para familia */}
             {user?.role === 'familia' && (
               <View style={styles.socialSection}>
-                <Text style={styles.socialTitle}>Acompanhe-nos nas redes sociais</Text>
-                
+                <Text style={styles.socialTitle}>Acompanhe a Clínica</Text>
+
+                {/* Links de Cima */}
                 <View style={styles.socialButtonsContainer}>
-                  {/* Botão Instagram */}
-                  <TouchableOpacity 
-                    style={[styles.socialButton, styles.instagramButton]}
-                    onPress={() => openSocialMedia(socialLinks.instagram)}
+                  <TouchableOpacity
+                    style={[styles.socialButton, styles.siteButton]}
+                    onPress={() => openURL(socialLinks.site)}
                   >
-                    <Feather name="instagram" size={24} color="white" />
-                    <Text style={styles.socialButtonText}>Instagram</Text>
+                    <Feather name="globe" size={20} color="white" />
+                    <Text style={styles.socialButtonText}>Site</Text>
                   </TouchableOpacity>
 
-                  {/* Botão Facebook */}
-                  <TouchableOpacity 
-                    style={[styles.socialButton, styles.facebookButton]}
-                    onPress={() => openSocialMedia(socialLinks.facebook)}
-                  >
-                    <Feather name="facebook" size={24} color="white" />
-                    <Text style={styles.socialButtonText}>Facebook</Text>
-                  </TouchableOpacity>
-
-                  {/* Botão WhatsApp */}
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.socialButton, styles.whatsappButton]}
-                    onPress={() => openSocialMedia(socialLinks.whatsapp)}
+                    onPress={() => openURL(socialLinks.whatsapp)}
                   >
-                    <Feather name="message-circle" size={24} color="white" />
+                    <Feather name="message-circle" size={20} color="white" />
                     <Text style={styles.socialButtonText}>WhatsApp</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Links de Baixo */}
+                <View style={styles.socialButtonsContainer}>
+                  <TouchableOpacity
+                    style={[styles.socialButton, styles.youtubeButton]}
+                    onPress={() => openURL(socialLinks.youtube)}
+                  >
+                    <Feather name="youtube" size={20} color="white" />
+                    <Text style={styles.socialButtonText}>YouTube</Text>
+                  </TouchableOpacity>
+
+
+                  <TouchableOpacity
+                    style={[styles.socialButton, styles.instagramButton]}
+                    onPress={() => openURL(socialLinks.instagram)}
+                  >
+                    <Feather name="instagram" size={20} color="white" />
+                    <Text style={styles.socialButtonText}>Instagram</Text>
                   </TouchableOpacity>
                 </View>
               </View>

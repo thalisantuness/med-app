@@ -7,22 +7,6 @@ export default StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 40,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 8,
-  },
-  backText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: "#385b3e",
-    fontWeight: "500",
-  },
   pageTitle: {
     fontSize: 24,
     fontWeight: "600",
@@ -58,24 +42,14 @@ export default StyleSheet.create({
     fontWeight: "500",
     color: "#385b3e",
   },
-
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 16,
-  },
-
-  // Adicione estas propriedades ao seu objeto de estilos
   socialSection: {
     marginTop: 30,
     padding: 20,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#FFFFFF",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#e9ecef",
+    borderColor: "#E5E7EB",
+    marginBottom: 20,
   },
   socialTitle: {
     fontSize: 18,
@@ -88,6 +62,7 @@ export default StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     flexWrap: "wrap",
+    marginBottom: 10,
   },
   socialButton: {
     flexDirection: "row",
@@ -95,14 +70,18 @@ export default StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     margin: 5,
-    minWidth: 120,
+    minWidth: 140,
     justifyContent: "center",
+    elevation: 2,
+  },
+  siteButton: {
+    backgroundColor: "#3498DB", // Azul
   },
   instagramButton: {
     backgroundColor: "#E1306C",
   },
-  facebookButton: {
-    backgroundColor: "#3b5998",
+  youtubeButton: {
+    backgroundColor: "#FF0000", // Vermelho
   },
   whatsappButton: {
     backgroundColor: "#25D366",
@@ -113,3 +92,4 @@ export default StyleSheet.create({
     fontWeight: "600",
   },
 });
+
