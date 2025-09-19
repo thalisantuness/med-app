@@ -11,10 +11,15 @@ export default function ProfileScreen() {
 
   const getRoleName = () => {
     switch (user?.role) {
-      case "medico":
-        return "Médico";
+      case "profissional":
+        const type = user.profissional_type
+          ? user.profissional_type.charAt(0).toUpperCase() + user.profissional_type.slice(1)
+          : 'Profissional';
+        return type;
       case "familia":
         return "Família";
+      case "admin":
+        return "Administrador";
       default:
         return "Usuário";
     }
@@ -41,7 +46,7 @@ export default function ProfileScreen() {
               role: "",
               cpf: ""
             });
-           
+
           },
         },
       ]
@@ -49,7 +54,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView 
+    <ScrollView
       contentContainerStyle={styles.scrollContainer}
       style={styles.container}
     >
@@ -59,7 +64,7 @@ export default function ProfileScreen() {
         <View style={styles.avatarPlaceholder}>
           <Feather name="user" size={40} color="#fff" />
         </View>
-        
+
         <View style={styles.profileInfo}>
           <Text style={styles.userName}>{user?.name || "Usuário"}</Text>
           <Text style={styles.userRole}>{getRoleName()}</Text>
@@ -89,7 +94,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.logoutButton}
         onPress={handleLogout}
       >

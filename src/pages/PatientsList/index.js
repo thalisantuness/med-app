@@ -42,7 +42,7 @@ const PatientsList = ({ navigation }) => {
         // Transforma o único usuário em um array para manter a mesma estrutura
         setPatients([response.data]);
       } else {
-        // Se for médico, busca todos os pacientes
+        // ALTERADO: Agora busca pacientes para 'profissional' ou 'admin'
         response = await api.get("usuarios/pacientes", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -82,7 +82,8 @@ const PatientsList = ({ navigation }) => {
       <StatusBar backgroundColor="white" barStyle="dark-content" />
 
       <Text style={styles.pageTitle}>
-        {user?.role === 'familia' ? 'Diário' : 'Selecione o paciente'}
+        {/* ALTERADO: A lógica agora cobre profissional e admin */}
+        {(user?.role === 'profissional' || user?.role === 'admin') ? 'Selecione o paciente' : 'Diário'}
       </Text>
 
       <View style={styles.content}>
@@ -109,7 +110,8 @@ const PatientsList = ({ navigation }) => {
                       {user?.role === 'familia' ? 'Calendário de atividades' : item.nome}
                     </Text>
                   </View>
-                  {user?.role === 'medico' && (
+                  {/* ALTERADO: Lógica atualizada para 'profissional' e 'admin' */}
+                  {(user?.role === 'profissional' || user?.role === 'admin') && (
                     <Feather name="chevron-right" size={20} color="#385b3e" />
                   )}
                 </TouchableOpacity>

@@ -4,12 +4,15 @@ import ConsultationStack from "./ConsultationStack";
 import TaskDiaryStack from "./TaskDiaryStack";
 import ProfileStack from "./ProfileStack";
 import UserStack from "./UserStack"; 
-import { useContextProvider } from "../context/AuthContext"; 
+import { useContextProvider } from "../context/AuthContext";
 
 const Tab = createBottomTabNavigator();
 
 function AppTabs() {
-  const { user } = useContextProvider(); 
+  const { user } = useContextProvider();
+
+  // A lógica verifica se o usuário é profissional ou admin
+  const showAdminFeatures = user?.role === 'profissional' || user?.role === 'admin';
 
   return (
     <Tab.Navigator
@@ -19,30 +22,23 @@ function AppTabs() {
         tabBarInactiveTintColor: "#8391A1",
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-
-          if (route.name === "Consultas") {
-            iconName = "calendar";
-          } else if (route.name === "Diário") {
-            iconName = "book";
-          } else if (route.name === "Perfil") {
-            iconName = "user";
-          } else if (route.name === "Usuários") { 
-            iconName = "users";
-          }
-
+          if (route.name === "Consultas") iconName = "calendar";
+          else if (route.name === "Diário") iconName = "book";
+          else if (route.name === "Perfil") iconName = "user";
+          else if (route.name === "Usuários") iconName = "users";
           return <Feather name={iconName} size={size} color={color} />;
         },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          marginBottom: 5,
+        tabBarLabelStyle: { 
+          fontSize: 12, 
+          marginBottom: 5, 
         },
-        tabBarStyle: {
-          height: 60,
+        tabBarStyle: { 
+          height: 60, 
           paddingTop: 5,
         },
       })}
     >
-      {user?.role === 'medico' && (
+      {showAdminFeatures && (
         <Tab.Screen
           name="Usuários"
           component={UserStack}

@@ -100,7 +100,8 @@ export default function LoginScreen({ navigation }) {
           id: user.usuario_id,
           name: user.nome,
           role: user.role,
-          cpf: user.cpf
+          cpf: user.cpf,
+          profissional_type: user.profissional_type || ""
         });
         setIsAuth(true);
 

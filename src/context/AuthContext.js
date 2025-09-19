@@ -8,22 +8,23 @@ export function ContextProvider({ children }) {
   const [user, setUser] = useState({
     id: null,
     name: "",
-    role: "", // 'medico' ou outro valor
-    cpf: ""
+    role: "", // 'profissional', 'familia' ou 'admin'
+    cpf: "",
+    profissional_type: "" // 'medico', 'psicólogo', etc.
   });
 
   const [selectedPatientId, setSelectedPatientId] = useState(null);
 
   return (
     <AuthContext.Provider
-      value={{ 
-        token, 
+      value={{
+        token,
         setToken,
-        isAuth, 
+        isAuth,
         setIsAuth,
         user,
         setUser,
-        selectedPatientId, 
+        selectedPatientId,
         setSelectedPatientId
       }}
     >

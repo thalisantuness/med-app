@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import UserManagement from '../pages/UserManagement'; 
+import UserManagement from '../pages/UserManagement/index'; 
 
 const Stack = createNativeStackNavigator();
 

@@ -27,6 +27,13 @@ export default StyleSheet.create({
         textAlign: 'center',
         marginVertical: 20,
     },
+    label: {
+        fontSize: 16,
+        color: "#385b3e",
+        marginBottom: 8,
+        fontWeight: "500",
+        marginLeft: 5,
+    },
     formContainer: {
         backgroundColor: '#fff',
         padding: 20,
