@@ -1,12 +1,16 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Feather } from "@expo/vector-icons"; // Alterado para Feather
+import { Feather } from "@expo/vector-icons";
 import ConsultationStack from "./ConsultationStack";
 import TaskDiaryStack from "./TaskDiaryStack";
 import ProfileStack from "./ProfileStack";
+import UserStack from "./UserStack"; 
+import { useContextProvider } from "../context/AuthContext"; 
 
 const Tab = createBottomTabNavigator();
 
 function AppTabs() {
+  const { user } = useContextProvider(); 
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -22,6 +26,8 @@ function AppTabs() {
             iconName = "book";
           } else if (route.name === "Perfil") {
             iconName = "user";
+          } else if (route.name === "Usuários") { 
+            iconName = "users";
           }
 
           return <Feather name={iconName} size={size} color={color} />;
@@ -36,6 +42,13 @@ function AppTabs() {
         },
       })}
     >
+      {user?.role === 'medico' && (
+        <Tab.Screen
+          name="Usuários"
+          component={UserStack}
+          options={{ title: "Usuários" }}
+        />
+      )}
       <Tab.Screen
         name="Consultas"
         component={ConsultationStack}
