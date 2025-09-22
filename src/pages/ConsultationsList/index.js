@@ -17,13 +17,23 @@ const ConsultationsList = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const { token, user } = useContextProvider();
 
+  // Variável para controle de permissão de gerenciamento
+  const canManageConsultations = user?.role === 'profissional' || user?.role === 'admin';
+
   const fetchConsultations = async () => {
     try {
+      setLoading(true); // Garante que o loading seja exibido a cada nova busca
       let endpoint;
       
-      if (user?.role === 'medico') {
+      // LÓGICA ATUALIZADA PARA OS 3 PERFIS DE USUÁRIO
+      if (user?.role === 'admin') {
+        // Admin vê todas as consultas do sistema
+        endpoint = '/consultas';
+      } else if (user?.role === 'profissional') {
+        // Profissional vê apenas as suas consultas
         endpoint = `medicos/${user.id}/consultas`;
       } else {
+        // Família vê apenas as suas consultas
         endpoint = `pacientes/${user.id}/consultas`;
       }
 
@@ -39,7 +49,6 @@ const ConsultationsList = ({ navigation }) => {
       if (error.response?.status === 401) {
         navigation.navigate("Login");
       } else {
-        // Mostrar mensagem de erro para o usuário
         alert("Erro ao carregar consultas. Tente novamente mais tarde.");
       }
     } finally {
@@ -48,6 +57,7 @@ const ConsultationsList = ({ navigation }) => {
   };
 
   useEffect(() => {
+    // Re-busca os dados toda vez que a tela recebe foco para mantê-la atualizada
     const unsubscribe = navigation.addListener('focus', () => {
       fetchConsultations();
     });
@@ -78,7 +88,20 @@ const ConsultationsList = ({ navigation }) => {
   };
 
   const renderFamilyOrDoctorInfo = (item) => {
-    if (user?.role === 'medico') {
+    // ATUALIZADO: Lógica de exibição para os 3 perfis
+    if (user?.role === 'admin') {
+      return (
+        <>
+          <Text style={styles.doctorText}>
+            Profissional: {item.Medico?.nome || "N/A"}
+          </Text>
+          <Text style={styles.familyText}>
+            Paciente: {item.Familia?.nome || "N/A"}
+          </Text>
+        </>
+      );
+    }
+    if (user?.role === 'profissional') {
       return (
         <Text style={styles.familyText}>
           Paciente: {item.Familia?.nome || "Nome não disponível"}
@@ -97,7 +120,8 @@ const ConsultationsList = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar backgroundColor="white" barStyle="dark-content" />
       <View style={styles.header}>
-        {user?.role === 'medico' && (
+        {/* ATUALIZADO: Botão de adicionar visível para profissional e admin */}
+        {canManageConsultations && (
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => navigation.navigate("AddConsultation")}
@@ -108,7 +132,8 @@ const ConsultationsList = ({ navigation }) => {
       </View>
 
       <Text style={styles.pageTitle}>
-        {user?.role === 'medico' ? "Minhas Consultas" : "Consultas da Família"}
+        {/* ATUALIZADO: Título dinâmico com base no perfil */}
+        {user?.role === 'admin' ? "Todas as Consultas" : (user?.role === 'profissional' ? "Minhas Consultas" : "Consultas da Família")}
       </Text>
 
       <View style={styles.content}>

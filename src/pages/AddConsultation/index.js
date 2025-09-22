@@ -8,6 +8,7 @@ import {
   ScrollView,
   Platform,
   Alert,
+  Keyboard,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
@@ -19,17 +20,27 @@ import { useContextProvider } from "../../context/AuthContext";
 const AddConsultation = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [loadingPatients, setLoadingPatients] = useState(false);
+  const [loadingMedicos, setLoadingMedicos] = useState(false);
+  
   const [formData, setFormData] = useState({
     descricao: "",
     data_agendada: "",
     status: "agendada",
     familia_id: null,
+    medico_id: null,
   });
+
   const [patients, setPatients] = useState([]);
+  const [medicos, setMedicos] = useState([]);
   const [date, setDate] = useState(new Date());
-  const [showPicker, setShowPicker] = useState(false);
+  
+  // Estados separados para o seletor de data
+  const [showDateTimePicker, setShowDateTimePicker] = useState(false); // Para iOS
+  const [showDatePicker, setShowDatePicker] = useState(false); // Para data no Android
+  const [showTimePicker, setShowTimePicker] = useState(false); // Para hora no Android
 
   const { token, user } = useContextProvider();
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     const now = new Date();
@@ -45,11 +56,7 @@ const AddConsultation = ({ navigation }) => {
   const fetchPatients = async () => {
     try {
       setLoadingPatients(true);
-      const response = await api.get("/usuarios/pacientes", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get("/usuarios/pacientes", { headers: { Authorization: `Bearer ${token}` } });
       setPatients(response.data);
     } catch (error) {
       console.error("Error fetching patients:", error);
@@ -58,10 +65,25 @@ const AddConsultation = ({ navigation }) => {
       setLoadingPatients(false);
     }
   };
+  
+  const fetchMedicos = async () => {
+    if (!isAdmin) return;
+    try {
+      setLoadingMedicos(true);
+      const response = await api.get("/usuarios/medicos", { headers: { Authorization: `Bearer ${token}` } });
+      setMedicos(response.data);
+    } catch (error) {
+      console.error("Error fetching medicos:", error);
+      Alert.alert("Erro", "Erro ao carregar profissionais.");
+    } finally {
+      setLoadingMedicos(false);
+    }
+  };
 
   useEffect(() => {
     if (token) {
       fetchPatients();
+      fetchMedicos();
     }
   }, [token]);
 
@@ -71,48 +93,82 @@ const AddConsultation = ({ navigation }) => {
     const day = String(date.getDate()).padStart(2, '0');
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-    
     return `${year}-${month}-${day} ${hours}:${minutes}:00`;
   };
 
-  const handleDateChange = (event, selectedDate) => {
-    setShowPicker(Platform.OS === 'ios');
-    
-    if (selectedDate) {
-      const minutes = selectedDate.getMinutes();
-      if (minutes > 0 && minutes < 30) {
-        selectedDate.setMinutes(30);
-      } else if (minutes > 30) {
-        selectedDate.setMinutes(0);
-        selectedDate.setHours(selectedDate.getHours() + 1);
-      }
-      selectedDate.setSeconds(0);
-      
-      setDate(selectedDate);
-      setFormData({...formData, data_agendada: formatDateToAPI(selectedDate)});
+  const adjustMinutes = (selectedDate) => {
+    const newDate = new Date(selectedDate);
+    const minutes = newDate.getMinutes();
+    if (minutes > 0 && minutes < 30) {
+      newDate.setMinutes(30);
+    } else if (minutes > 30) {
+      newDate.setMinutes(0);
+      newDate.setHours(newDate.getHours() + 1);
+    }
+    newDate.setSeconds(0);
+    return newDate;
+  };
+
+  // Handler para iOS (tudo de uma vez)
+  const onChangeDateTime = (event, selectedDate) => {
+    setShowDateTimePicker(false);
+    if (event.type === 'set' && selectedDate) {
+      const adjusted = adjustMinutes(selectedDate);
+      setDate(adjusted);
+      setFormData(prev => ({...prev, data_agendada: formatDateToAPI(adjusted)}));
+    }
+  };
+
+  // Handlers para Android (em duas etapas)
+  const onChangeDate = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (event.type === 'set' && selectedDate) {
+      const currentDate = new Date(date);
+      currentDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+      setDate(currentDate);
+      setShowTimePicker(true); // Abre o seletor de hora
+    }
+  };
+
+  const onChangeTime = (event, selectedDate) => {
+    setShowTimePicker(false);
+    if (event.type === 'set' && selectedDate) {
+      const currentDate = new Date(date);
+      currentDate.setHours(selectedDate.getHours(), selectedDate.getMinutes(), 0, 0);
+      const adjusted = adjustMinutes(currentDate);
+      setDate(adjusted);
+      setFormData(prev => ({...prev, data_agendada: formatDateToAPI(adjusted)}));
     }
   };
 
   const showPickerModal = () => {
-    setShowPicker(true);
+    Keyboard.dismiss();
+    if (Platform.OS === 'android') {
+      setShowDatePicker(true);
+    } else {
+      setShowDateTimePicker(true);
+    }
   };
 
   const handleSave = async () => {
+    Keyboard.dismiss();
     setLoading(true);
     try {
       const payload = {
-        medico_id: user.id,
+        medico_id: isAdmin ? formData.medico_id : user.id,
         familia_id: formData.familia_id,
         data_agendada: formData.data_agendada,
         descricao: formData.descricao,
         status: "agendada"
       };
 
-      await api.post("/consultas", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      if (!payload.medico_id || !payload.familia_id || !payload.descricao) {
+          Alert.alert("Atenção", "Por favor, preencha a descrição, o profissional e o paciente.");
+          setLoading(false);
+          return;
+      }
+
+      await api.post("/consultas", payload, { headers: { Authorization: `Bearer ${token}` } });
       navigation.goBack();
     } catch (error) {
       console.error("Error saving consultation:", error);
@@ -145,7 +201,6 @@ const AddConsultation = ({ navigation }) => {
           />
 
           <Text style={styles.label}>Data e Hora</Text>
-          
           <TouchableOpacity 
             style={[styles.input, {justifyContent: 'center'}]}
             onPress={showPickerModal}
@@ -155,37 +210,36 @@ const AddConsultation = ({ navigation }) => {
               {date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
             </Text>
           </TouchableOpacity>
-          
-          {showPicker && (
-            <DateTimePicker
-              value={date}
-              mode="datetime"
-              display="spinner"
-              onChange={handleDateChange}
-              minimumDate={new Date()}
-              minuteInterval={30}
-              locale="pt-BR"
-            />
-          )}
 
+          {isAdmin && (
+            <>
+              <Text style={styles.label}>Profissional</Text>
+              {loadingMedicos ? <ActivityIndicator size="small" color="#385b3e" /> : (
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={formData.medico_id}
+                    onValueChange={(itemValue) => setFormData({ ...formData, medico_id: itemValue })}
+                  >
+                    <Picker.Item label="Selecione um profissional" value={null} />
+                    {medicos.map((medico) => (
+                      <Picker.Item key={medico.usuario_id} label={medico.nome} value={medico.usuario_id} />
+                    ))}
+                  </Picker>
+                </View>
+              )}
+            </>
+          )}
+          
           <Text style={styles.label}>Paciente</Text>
-          {loadingPatients ? (
-            <ActivityIndicator size="small" color="#385b3e" />
-          ) : (
+          {loadingPatients ? <ActivityIndicator size="small" color="#385b3e" /> : (
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={formData.familia_id}
-                onValueChange={(itemValue) =>
-                  setFormData({ ...formData, familia_id: itemValue })
-                }
+                onValueChange={(itemValue) => setFormData({ ...formData, familia_id: itemValue })}
               >
                 <Picker.Item label="Selecione um paciente" value={null} />
                 {patients.map((patient) => (
-                  <Picker.Item
-                    key={patient.usuario_id}
-                    label={patient.nome}
-                    value={patient.usuario_id}
-                  />
+                  <Picker.Item key={patient.usuario_id} label={patient.nome} value={patient.usuario_id} />
                 ))}
               </Picker>
             </View>
@@ -194,20 +248,46 @@ const AddConsultation = ({ navigation }) => {
           <TouchableOpacity
             style={[
               styles.loginButton,
-              (!formData.familia_id || !formData.descricao || !formData.data_agendada) &&
-                styles.disabledButton,
+              (!formData.familia_id || !formData.descricao || !formData.data_agendada) && styles.disabledButton,
             ]}
             onPress={handleSave}
             disabled={loading || !formData.familia_id || !formData.descricao || !formData.data_agendada}
           >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.loginButtonText}>Agendar Consulta</Text>
-            )}
+            {loading ? <ActivityIndicator color="white" /> : <Text style={styles.loginButtonText}>Agendar Consulta</Text>}
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Pickers para Android */}
+      {showDatePicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={date}
+          mode="date"
+          display="default"
+          onChange={onChangeDate}
+          minimumDate={new Date()}
+        />
+      )}
+      {showTimePicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={date}
+          mode="time"
+          display="default"
+          onChange={onChangeTime}
+        />
+      )}
+
+      {/* Picker para iOS */}
+      {showDateTimePicker && Platform.OS === 'ios' && (
+        <DateTimePicker
+          value={date}
+          mode="datetime"
+          display="spinner"
+          onChange={onChangeDateTime}
+          minimumDate={new Date()}
+          minuteInterval={30}
+        />
+      )}
     </View>
   );
 };

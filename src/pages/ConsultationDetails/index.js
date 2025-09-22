@@ -37,7 +37,7 @@ const ConsultationDetails = ({ route }) => {
     familia_id: null,
   });
 
-  const isMedico = user?.role === 'medico';
+  const canManageConsultation = user?.role === 'profissional' || user?.role === 'admin';
 
   const fetchConsultationDetails = async () => {
     try {
@@ -237,11 +237,12 @@ const ConsultationDetails = ({ route }) => {
         </View>
       </View>
 
-      {isMedico && (
+      {/* MELHORIA: A exibição dos botões agora usa a nova variável de permissão */}
+      {canManageConsultation && (
         <View style={styles.actionsContainer}>
           {consultation.status !== "cancelada" && (
             <>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.actionButton, styles.editButton]}
                 onPress={() => setEditModalVisible(true)}
               >
@@ -249,7 +250,7 @@ const ConsultationDetails = ({ route }) => {
                 <Text style={styles.actionButtonText}>Editar</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.actionButton, styles.rescheduleButton]}
                 onPress={() => {
                   setNewDate(new Date(consultation.data_agendada));
@@ -260,7 +261,7 @@ const ConsultationDetails = ({ route }) => {
                 <Text style={styles.actionButtonText}>Remarcar</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.actionButton, styles.cancelButton]}
                 onPress={handleCancel}
               >
@@ -270,7 +271,7 @@ const ConsultationDetails = ({ route }) => {
             </>
           )}
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.deleteButton]}
             onPress={() => setModalVisible(true)}
           >
@@ -293,14 +294,14 @@ const ConsultationDetails = ({ route }) => {
             <Text style={styles.modalText}>Tem certeza que deseja excluir esta consulta?</Text>
             
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelModalButton]}
                 onPress={() => setModalVisible(false)}
               >
                 <Text style={styles.modalButtonText}>Cancelar</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.confirmModalButton]}
                 onPress={handleDelete}
               >
@@ -343,7 +344,7 @@ const ConsultationDetails = ({ route }) => {
             {formData.realizada && (
               <>
                 <Text style={styles.label}>Data Realizada</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.datePickerButton}
                   onPress={() => setShowDatePicker(true)}
                 >
@@ -355,14 +356,14 @@ const ConsultationDetails = ({ route }) => {
             )}
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelModalButton]}
                 onPress={() => setEditModalVisible(false)}
               >
                 <Text style={styles.modalButtonText}>Cancelar</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.confirmModalButton]}
                 onPress={handleUpdate}
               >
@@ -384,7 +385,7 @@ const ConsultationDetails = ({ route }) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Remarcar Consulta</Text>
             
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.datePickerButton}
               onPress={() => setShowDatePicker(true)}
             >
@@ -393,7 +394,7 @@ const ConsultationDetails = ({ route }) => {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.datePickerButton}
               onPress={() => setShowTimePicker(true)}
             >
@@ -418,14 +419,14 @@ const ConsultationDetails = ({ route }) => {
             )}
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelModalButton]}
                 onPress={() => setRescheduleModalVisible(false)}
               >
                 <Text style={styles.modalButtonText}>Cancelar</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.confirmModalButton]}
                 onPress={handleReschedule}
               >

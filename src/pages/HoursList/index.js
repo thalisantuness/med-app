@@ -12,26 +12,15 @@ const HoursList = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [savedTasks, setSavedTasks] = useState([]);
 
-  // Horários das 7h às 22h (16 horas no total)
-const [hours] = useState(Array.from({ length: 17 }, (_, i) => i + 7));
-
-  // Tarefas fixas pré-definidas
-  const fixedTasks = {
-    12: "Almoço",
-    14: "Academia",
-    15: "Piscina",
-    16: "Descanso",
-    17: "Leitura",
-    18: "Leitura",
-    19: "Janta",
-  };
+  const [hours] = useState(Array.from({ length: 17 }, (_, i) => i + 7));
 
   const fetchTasks = async () => {
     try {
       setLoading(true);
       let response;
 
-      if (user?.role === 'medico') {
+      // CORREÇÃO: A lógica agora verifica se o usuário é 'profissional' ou 'admin'
+      if (user?.role === 'profissional' || user?.role === 'admin') {
         response = await api.get(`/medicos/${user.id}/pacientes/${selectedPatientId}/tarefas`, {
           params: {
             dia: day,
@@ -65,18 +54,15 @@ const [hours] = useState(Array.from({ length: 17 }, (_, i) => i + 7));
   };
 
   useEffect(() => {
-    // Listener para quando a tela receber foco
     const unsubscribe = navigation.addListener('focus', () => {
       fetchTasks();
     });
 
-    // Verifica se veio da TaskForm com flag de atualização
     if (route.params?.shouldRefresh) {
       fetchTasks();
       navigation.setParams({ shouldRefresh: false });
     }
 
-    // Carrega os dados inicialmente
     fetchTasks();
 
     return unsubscribe;
