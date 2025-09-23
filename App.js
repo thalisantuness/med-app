@@ -1,15 +1,15 @@
-import React, {useEffect} from 'react';
-// import Routes from './src/routes';
-import {ContextProvider} from "./src/context/AuthContext"
-import AppNavigator from "./src/routes/AppNavigator"
+import React from 'react';
+import { ContextProvider } from "./src/context/AuthContext";
+import AppNavigator from "./src/routes/AppNavigator";
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-export default function App(){
-
-  return(
-    <ContextProvider>
-    <AppNavigator />
-    {/* <Routes/> */}
-    </ContextProvider>
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <ContextProvider>
+        <AppNavigator />
+      </ContextProvider>
+    </SafeAreaProvider>
   );
 
 }

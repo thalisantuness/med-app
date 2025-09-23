@@ -1,4 +1,3 @@
-// Importações necessárias no topo do arquivo
 import React, { useState } from "react";
 import {
   View,
@@ -6,7 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Platform, // Importa Platform
+  Platform,
   Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -39,10 +38,9 @@ async function registerForPushNotificationsAsync(authToken) {
       Alert.alert('Falha!', 'Não foi possível obter o token para notificações push!');
       return;
     }
-    // IMPORTANTE: Substitua 'YOUR_PROJECT_ID' pelo ID do seu projeto no Expo
+    
     token = (await Notifications.getExpoPushTokenAsync({ projectId: 'ccaee051-5503-4bd6-845c-ca43fcf51325' })).data;
     
-    // Envia o token para o backend
     if (token && authToken) {
       try {
         await api.post('/usuarios/salvar-push-token', { token }, {
@@ -103,13 +101,19 @@ export default function LoginScreen({ navigation }) {
           cpf: user.cpf,
           profissional_type: user.profissional_type || ""
         });
-        setIsAuth(true);
+        setIsAuth(true); 
 
-        // **CHAMADA PARA REGISTRAR NOTIFICAÇÕES APÓS O LOGIN**
-        await registerForPushNotificationsAsync(token);
+        try {
+          console.log("Tentando registrar para notificações push...");
+          await registerForPushNotificationsAsync(token);
+          console.log("Registro para notificações concluído.");
+        } catch (pushError) {
+          
+          console.error("Falha ao registrar para notificações, mas o login continua:", pushError);
+        }
       }
     } catch (error) {
-      console.error("Erro na requisição:", error);
+      console.error("Erro na requisição de login:", error);
       Alert.alert("Login falhou", "Verifique suas credenciais e tente novamente.");
     } finally {
       setLoading(false);
