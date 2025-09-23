@@ -11,7 +11,7 @@ const Tab = createBottomTabNavigator();
 function AppTabs() {
   const { user } = useContextProvider();
 
-  // A lógica verifica se o usuário é profissional ou admin
+  // A lógica para mostrar/esconder a aba de usuários continua a mesma
   const showAdminFeatures = user?.role === 'profissional' || user?.role === 'admin';
 
   return (
@@ -38,13 +38,6 @@ function AppTabs() {
         },
       })}
     >
-      {showAdminFeatures && (
-        <Tab.Screen
-          name="Usuários"
-          component={UserStack}
-          options={{ title: "Usuários" }}
-        />
-      )}
       <Tab.Screen
         name="Consultas"
         component={ConsultationStack}
@@ -55,6 +48,13 @@ function AppTabs() {
         component={TaskDiaryStack}
         options={{ title: "Diário" }}
       />
+      {showAdminFeatures && (
+        <Tab.Screen
+          name="Usuários"
+          component={UserStack}
+          options={{ title: "Usuários" }}
+        />
+      )}
       <Tab.Screen
         name="Perfil"
         component={ProfileStack}

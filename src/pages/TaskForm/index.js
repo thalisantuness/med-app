@@ -40,11 +40,10 @@ const TaskForm = ({ route, navigation }) => {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showFinalConfirmationModal, setShowFinalConfirmationModal] = useState(false);
   const [showCreateForAllModal, setShowCreateForAllModal] = useState(false);
+  
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showFinalDeleteModal, setShowFinalDeleteModal] = useState(false);
 
   const isSavedTask = !!savedTask;
-  // CORREÇÃO: Variável unificada para permissões. Admin também pode gerenciar.
   const canManageTasks = user?.role === "profissional" || user?.role === "admin";
   const isFamilia = user?.role === "familia";
 
@@ -82,29 +81,6 @@ const TaskForm = ({ route, navigation }) => {
     }
   };
 
-  const deleteAllTasks = async () => {
-    try {
-        const allTasksResponse = await api.get(`/medicos/${user.id}/tarefas`, {
-            params: { mes_ano: month, dia: day, hora: hour },
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        const tasksToDelete = allTasksResponse.data.filter(
-            (task) => task.descricao === savedTask.descricao
-        );
-        if (tasksToDelete.length === 0) throw new Error("Nenhuma tarefa correspondente encontrada para excluir.");
-        const deletePromises = tasksToDelete.map((task) =>
-            api.delete(`/tarefas/${task.tarefa_id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-        );
-        await Promise.all(deletePromises);
-    } catch (error) {
-        console.error("Erro ao excluir todas as tarefas:", error);
-        throw error;
-    }
-  };
-
-
   const saveTask = async (forAllFamilies = false) => {
     setLoading(true);
     try {
@@ -122,8 +98,6 @@ const TaskForm = ({ route, navigation }) => {
         }
       } else {
         // Lógica para paciente único
-
-        // CORREÇÃO: Adicionada validação para garantir que um paciente foi selecionado
         if (!selectedPatientId || !user.id) {
             Alert.alert("Erro", "Paciente ou profissional não identificado. Por favor, selecione o paciente novamente.");
             setLoading(false);
@@ -135,7 +109,6 @@ const TaskForm = ({ route, navigation }) => {
           descricao: taskData.descricao, medico_id: user.id, paciente_id: selectedPatientId,
         };
         
-        // Log para depuração, para ver o que está sendo enviado
         console.log("Enviando payload para API:", payload); 
 
         if (isSavedTask) {
@@ -161,18 +134,14 @@ const TaskForm = ({ route, navigation }) => {
     }
   };
 
-  const handleDelete = async (forAll = false) => {
+  // IMPLEMENTAÇÃO: Função de exclusão simplificada, sem parâmetros
+  const handleDelete = async () => {
     setLoading(true);
-    setShowDeleteModal(false);
-    setShowFinalDeleteModal(false);
+    setShowDeleteModal(false); 
     try {
-        if (forAll) {
-            await deleteAllTasks();
-        } else {
-            await api.delete(`/tarefas/${taskData.tarefa_id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-        }
+        await api.delete(`/tarefas/${taskData.tarefa_id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         Alert.alert("Sucesso", "Tarefa excluída com sucesso.");
         navigation.navigate("HoursList", {
             month, day, dateString, shouldRefresh: true,
@@ -209,8 +178,7 @@ const TaskForm = ({ route, navigation }) => {
     setShowFinalConfirmationModal(false);
     saveTask(true);
   };
-
-  // CORREÇÃO: Variáveis de controle agora usam a nova lógica de permissão
+  
   const isDescricaoEditable = canManageTasks;
   const isCheckboxEditable = canManageTasks;
   const showSaveButton = canManageTasks;
@@ -385,67 +353,34 @@ const TaskForm = ({ route, navigation }) => {
             </View>
           </Modal>
 
-          {/* Modais de Excluir */}
           <Modal
             transparent={true}
             visible={showDeleteModal}
             onRequestClose={() => setShowDeleteModal(false)}
-            >
+          >
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Excluir Tarefa</Text>
                 <Text style={styles.modalText}>
-                  Deseja excluir esta tarefa para apenas este paciente ou para todos?
+                  Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.
                 </Text>
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => handleDelete(false)}
-                  >
-                    <Text style={styles.modalButtonText}>Apenas este</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.confirmButton]}
-                    onPress={() => {
-                      setShowDeleteModal(false);
-                      setShowFinalDeleteModal(true);
-                    }}
-                  >
-                    <Text style={styles.modalButtonText}>Para todos</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-            </Modal>
-
-            <Modal
-            transparent={true}
-            visible={showFinalDeleteModal}
-            onRequestClose={() => setShowFinalDeleteModal(false)}
-            >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Confirmação Final</Text>
-                <Text style={styles.modalText}>
-                  Tem certeza que deseja EXCLUIR esta tarefa para TODOS os pacientes? Esta ação não pode ser desfeita.
-                </Text>
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => setShowFinalDeleteModal(false)}
+                    onPress={() => setShowDeleteModal(false)}
                   >
                     <Text style={styles.modalButtonText}>Cancelar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.confirmButton, {backgroundColor: 'red'}]}
-                    onPress={() => handleDelete(true)}
+                    style={[styles.modalButton, {backgroundColor: 'red'}]}
+                    onPress={handleDelete}
                   >
-                    <Text style={styles.modalButtonText}>Excluir Todos</Text>
+                    <Text style={styles.modalButtonText}>Sim, excluir</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
-            </Modal>
+          </Modal>
         </>
       )}
     </View>
