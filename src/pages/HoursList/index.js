@@ -17,30 +17,31 @@ const HoursList = ({ route, navigation }) => {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      let response;
 
-      // CORREÇÃO: A lógica agora verifica se o usuário é 'profissional' ou 'admin'
-      if (user?.role === 'profissional' || user?.role === 'admin') {
-        response = await api.get(`/medicos/${user.id}/pacientes/${selectedPatientId}/tarefas`, {
-          params: {
-            dia: day,
-            mes_ano: month
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      } else {
-        response = await api.get(`/pacientes/${user.id}/tarefas`, {
-          params: {
-            dia: day,
-            mes_ano: month
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      // Define para qual paciente estamos buscando as tarefas.
+      // Se for profissional/admin, usa o ID do paciente selecionado.
+      // Se for família, usa o próprio ID do usuário.
+      const pacienteIdParaBuscar = (user?.role === 'profissional' || user?.role === 'admin') 
+        ? selectedPatientId 
+        : user.id;
+
+      if (!pacienteIdParaBuscar) {
+        setSavedTasks([]); // Limpa as tarefas se nenhum paciente estiver selecionado
+        setLoading(false);
+        return;
       }
+      
+      // CORREÇÃO: A rota agora é sempre focada no paciente,
+      // garantindo que todas as tarefas dele sejam exibidas para qualquer profissional.
+      const response = await api.get(`/pacientes/${pacienteIdParaBuscar}/tarefas`, {
+        params: {
+          dia: day,
+          mes_ano: month
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setSavedTasks(response.data);
     } catch (error) {
@@ -130,7 +131,9 @@ const HoursList = ({ route, navigation }) => {
             const isSavedTask = savedTasks.some(task => task.hora === item);
             const isChecked = getTaskStatus(item);
             const isFamilia = user?.role === 'familia';
-            const isClickable = !isFamilia || isSavedTask;
+            const canManage = user?.role === 'profissional' || user?.role === 'admin';
+            const isClickable = canManage || (isFamilia && isSavedTask);
+
 
             return (
               <TouchableOpacity
